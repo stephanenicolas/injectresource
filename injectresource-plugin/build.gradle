@@ -33,7 +33,7 @@ dependencies {
   compile gradleApi()
   compile localGroovy()
 
-  compile project(':injectview-annotations')
+  compile project(':injectresource-annotations')
 
 
   compile 'org.projectlombok:lombok:1.14.2'
@@ -73,7 +73,7 @@ dependencies {
 
 modifyPom {
   project {
-    name "InjectView Gradle Plugin"
+    name "Injectresource Gradle Plugin"
     description POM_DESCRIPTION
     url POM_URL
 

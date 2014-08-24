@@ -1,2 +1,3 @@
-include ':injectresource-annotations', ':injectresource-plugin'
+include ':injectresource-annotations'
+include ':injectresource-plugin'
 include ':injectresource-example'
