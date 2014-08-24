@@ -4,7 +4,7 @@ InjectResource [![Maven Central](https://maven-badges.herokuapp.com/maven-centra
 ***Injects resources automatically.***
 
 <img src="https://raw.github.com/stephanenicolas/injectresource/master/assets/injectresource-logo.jpg"
-width="200px" />
+width="150px" />
 
 ###Usage
 
