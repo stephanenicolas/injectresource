@@ -8,7 +8,6 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.animation.Animation;
 import com.github.stephanenicolas.afterburner.AfterBurner;
-
 import com.github.stephanenicolas.afterburner.exception.AfterBurnerImpossibleException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -91,7 +90,8 @@ public class InjectResourceProcessor implements IClassTransformer {
           getAllInjectedFieldsForAnnotation(classToTransform, InjectResource.class);
       String getApplicationString = getApplicationString(classToTransform);
       String getResourceString = getResourceString(getApplicationString);
-      String injectViewStatements = injectResourceStatements(fields, classToTransform, getApplicationString);
+      String injectViewStatements =
+          injectResourceStatements(fields, classToTransform, getApplicationString);
       StringBuffer buffer = new StringBuffer();
       buffer.append(getResourceString);
       buffer.append(";\n");
@@ -104,12 +104,26 @@ public class InjectResourceProcessor implements IClassTransformer {
     }
   }
 
-  private void injectStuff(CtClass classToTransform, String body)
-      throws CannotCompileException, AfterBurnerImpossibleException, NotFoundException {
-    //TODO only works for activities
-    afterBurner.afterOverrideMethod(classToTransform, "onCreate", body);
-  }
+  private void injectStuff(CtClass targetClazz, String body)
+      throws CannotCompileException, AfterBurnerImpossibleException, NotFoundException,
+      InjectResourceException {
+    boolean isActivity = isActivity(targetClazz);
+    boolean isFragment = isFragment(targetClazz);
+    boolean isSupportFragment = isSupportFragment(targetClazz);
+    boolean isView = isView(targetClazz);
 
+    if (isActivity) {
+      afterBurner.afterOverrideMethod(targetClazz, "onCreate", body);
+    } else if (isFragment || isSupportFragment) {
+      afterBurner.afterOverrideMethod(targetClazz, "onAttach", body);
+    }else {
+      throw new InjectResourceException(format(
+          "Injecting resource in %s is not supported. Injection is supported in Activities, "
+              + "Fragments (native and support), views and classes with a single constructor "
+              + "that accept a single paramater which has to "
+              + "be of one of the type listed earlier.", targetClazz));
+    }
+  }
 
   private String getApplicationString(CtClass targetClazz) {
     boolean isActivity = isActivity(targetClazz);
@@ -117,8 +131,13 @@ public class InjectResourceProcessor implements IClassTransformer {
     boolean isSupportFragment = isSupportFragment(targetClazz);
     boolean isView = isView(targetClazz);
 
-    //TODO : only works for activities
-    return "getApplication()";
+    if (isActivity) {
+      return "getApplication()";
+    } else if (isFragment || isSupportFragment) {
+      return "getActivity().getApplication()";
+    } else {
+      throw new IllegalStateException("How did we get there ?");
+    }
   }
 
   private String getResourceString(String getApplicationString) {
@@ -141,8 +160,8 @@ public class InjectResourceProcessor implements IClassTransformer {
     return result;
   }
 
-  private String injectResourceStatements(List<CtField> viewsToInject, CtClass targetClazz, String getApplicationString)
-      throws ClassNotFoundException, NotFoundException {
+  private String injectResourceStatements(List<CtField> viewsToInject, CtClass targetClazz,
+      String getApplicationString) throws ClassNotFoundException, NotFoundException {
     StringBuffer buffer = new StringBuffer();
     for (CtField field : viewsToInject) {
       Object annotation = field.getAnnotation(InjectResource.class);
@@ -186,20 +205,26 @@ public class InjectResourceProcessor implements IClassTransformer {
         findResourceString = "new Integer(resources.getInteger(" + id + "))";
       } else if (isSubClass(classPool, field.getType(), Drawable.class)) {
         findResourceString = "getDrawable(" + id + ")";
-      } else if (field.getType().isArray() && isSubClass(classPool, field.getType().getComponentType(), String.class)) {
+      } else if (field.getType().isArray() && isSubClass(classPool,
+          field.getType().getComponentType(), String.class)) {
         findResourceString = "getStringArray(" + id + ")";
-      } else if (field.getType().isArray() && field.getType().getComponentType().subtypeOf(
-          CtClass.intType)) {
+      } else if (field.getType().isArray() && field.getType()
+          .getComponentType()
+          .subtypeOf(CtClass.intType)) {
         findResourceString = "getIntArray(" + id + ")";
       } else if (isSubClass(classPool, field.getType(), Animation.class)) {
         root = null;
-        findResourceString = "android.view.animation.AnimationUtils.loadAnimation(" +getApplicationString + ", " + id + ")";
+        findResourceString = "android.view.animation.AnimationUtils.loadAnimation("
+            + getApplicationString
+            + ", "
+            + id
+            + ")";
       } else if (isSubClass(classPool, field.getType(), Movie.class)) {
         findResourceString = "getMovie(" + id + ")";
       } else {
         throw new NotFoundException(
-            format("Don't know how to inject field %s of type %s in %s", field.getName(),
-                field.getType().getName(), targetClazz.getName()));
+            format("InjectResource doen't know how to inject field %s of type %s in %s",
+                field.getName(), field.getType().getName(), targetClazz.getName()));
       }
       if (root != null) {
         buffer.append(root);
@@ -245,7 +270,8 @@ public class InjectResourceProcessor implements IClassTransformer {
     }
   }
 
-  private boolean isSubClass(ClassPool classPool, CtClass clazz, Class<?> superClass) throws NotFoundException {
+  private boolean isSubClass(ClassPool classPool, CtClass clazz, Class<?> superClass)
+      throws NotFoundException {
     CtClass superclass = classPool.get(superClass.getName());
     return clazz.subclassOf(superclass);
   }
