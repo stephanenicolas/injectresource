@@ -22,6 +22,7 @@ import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtConstructor;
 import javassist.CtField;
+import javassist.CtMethod;
 import javassist.NotFoundException;
 import javassist.build.IClassTransformer;
 import javassist.build.JavassistBuildException;
@@ -117,7 +118,7 @@ public class InjectResourceProcessor implements IClassTransformer {
       String injectViewStatements = injectResourceStatements(fields, classToTransform);
 
       StringBuffer buffer = new StringBuffer();
-      buffer.append(getResourceString).append(";\n").append(injectViewStatements);
+      buffer.append(getResourceString).append(injectViewStatements);
 
       String preliminaryBody = buffer.toString();
       log.debug("Preliminary body (before insertion) :" + preliminaryBody);
@@ -170,18 +171,6 @@ public class InjectResourceProcessor implements IClassTransformer {
     }
   }
 
-  private int findValidParamIndex(CtClass[] parameterTypes) {
-    int indexParam = 0;
-    for (CtClass paramClass : parameterTypes) {
-      if (isValidClass(paramClass)) {
-        return indexParam;
-      } else {
-        indexParam++;
-      }
-    }
-    return -1;
-  }
-
   private String createBodyWithInsertion(CtClass targetClazz, String preliminaryBody, String root) {
     //need a fresh copy for each call (constructor loop for instance)
     String bodyCopy = new String(preliminaryBody);
@@ -191,27 +180,6 @@ public class InjectResourceProcessor implements IClassTransformer {
     bodyCopy =
         bodyCopy.replaceAll(GET_APPLICATION_TAG, Matcher.quoteReplacement(getApplicationString));
     return bodyCopy;
-  }
-
-  //extension point for new classes
-  private String getApplicationString(CtClass targetClazz) {
-    if (isApplication(targetClazz)) {
-      return GET_ROOT_TAG;
-    } else if (isActivity(targetClazz) || isService(targetClazz)) {
-      return GET_ROOT_TAG + ".getApplication()";
-    } else if (isFragment(targetClazz) || isSupportFragment(targetClazz)) {
-      return GET_ROOT_TAG + ".getActivity().getApplication()";
-    } else if (isView(targetClazz)) {
-      return "((android.app.Application) "
-          + GET_ROOT_TAG
-          + ".getContext().getApplicationContext())";
-    } else {
-      throw new RuntimeException("How did we get there ?");
-    }
-  }
-
-  private String getResourceString() {
-    return "android.content.res.Resources resources = " + GET_APPLICATION_TAG + ".getResources()";
   }
 
   private List<CtField> getAllInjectedFieldsForAnnotation(CtClass clazz,
@@ -250,6 +218,65 @@ public class InjectResourceProcessor implements IClassTransformer {
       log.debug("Problem in extraction of constructors", e);
       return Collections.EMPTY_LIST;
     }
+  }
+
+  //private List<CtMethod> extractValidMethods(final CtClass classToTransform, String methodName) {
+  //  try {
+  //    List<CtMethod> ctMethods = new ArrayList<CtMethod>();
+  //    CtMethod[] declaredMethods = classToTransform.getDeclaredMethods();
+  //    for (CtMethod ctMethod : declaredMethods) {
+  //      CtClass[] paramClasses = ctMethod.getParameterTypes();
+  //      if (ctMethod.getName().equals(methodName) && paramClasses.length >= 1) {
+  //        for (CtClass paramClass : paramClasses) {
+  //          if (isValidClass(paramClass)) {
+  //            ctMethods.add(ctMethod);
+  //            continue;
+  //          }
+  //        }
+  //      }
+  //    }
+  //    return ctMethods;
+  //  } catch (Exception e) {
+  //    log.debug("Problem in extraction of methods", e);
+  //    return Collections.EMPTY_LIST;
+  //  }
+  //}
+
+  private int findValidParamIndex(CtClass[] parameterTypes) {
+    int indexParam = 0;
+    for (CtClass paramClass : parameterTypes) {
+      if (isValidClass(paramClass)) {
+        return indexParam;
+      } else {
+        indexParam++;
+      }
+    }
+    return -1;
+  }
+
+  //extension point for new classes
+  private String getApplicationString(CtClass targetClazz) {
+    if (isApplication(targetClazz)) {
+      return GET_ROOT_TAG;
+    } else if (isActivity(targetClazz) || isService(targetClazz)) {
+      return GET_ROOT_TAG + ".getApplication()";
+    } else if (isFragment(targetClazz) || isSupportFragment(targetClazz)) {
+      return GET_ROOT_TAG + ".getActivity().getApplication()";
+    } else if (isView(targetClazz)) {
+      return "((android.app.Application) "
+          + GET_ROOT_TAG
+          + ".getContext().getApplicationContext())";
+    } else {
+      throw new RuntimeException("How did we get there ?");
+    }
+  }
+
+  private String getResourceString() {
+    return new StringBuilder().append("android.app.Application application = " )
+        .append(GET_APPLICATION_TAG)
+        .append(";\n")
+        .append("android.content.res.Resources resources = application.getResources();\n")
+        .toString();
   }
 
   private String injectResourceStatements(List<CtField> viewsToInject, CtClass targetClazz)
@@ -304,8 +331,7 @@ public class InjectResourceProcessor implements IClassTransformer {
       } else if (isSubClass(classPool, field.getType(), Animation.class)) {
         root = null;
         findResourceString = "android.view.animation.AnimationUtils.loadAnimation("
-            + GET_APPLICATION_TAG
-            + ", "
+            + "application, "
             + id
             + ")";
       } else if (isSubClass(classPool, field.getType(), Movie.class)) {
