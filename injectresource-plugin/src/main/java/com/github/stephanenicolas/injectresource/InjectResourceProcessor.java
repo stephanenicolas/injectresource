@@ -171,8 +171,11 @@ public class InjectResourceProcessor implements IClassTransformer {
       ClassPool classPool = targetClazz.getClassPool();
       if (isSubClass(classPool, field.getType(), String.class)) {
         findResourceString = "getString(" + id + ")";
-      } else if (field.getType().subtypeOf(CtClass.booleanType) || isSubClass(classPool, field.getType(), Boolean.class)) {
+      } else if (field.getType().subtypeOf(CtClass.booleanType)) {
         findResourceString = "getBoolean(" + id + ")";
+      } else if (isSubClass(classPool, field.getType(), Boolean.class)) {
+        root = null;
+        findResourceString = "new Boolean(resources.getBoolean(" + id + "))";
       } else if (isSubClass(classPool, field.getType(), ColorStateList.class)) {
         findResourceString = "getColorStateList(" + id + ")";
       } else if (field.getType().subtypeOf(CtClass.intType)) {
@@ -184,7 +187,7 @@ public class InjectResourceProcessor implements IClassTransformer {
         findResourceString = "getDrawable(" + id + ")";
       } else if (field.getType().isArray() && isSubClass(classPool, field.getType().getComponentType(), String.class)) {
         findResourceString = "getStringArray(" + id + ")";
-      } else if (field.getType().isArray() && field.getType().subtypeOf(CtClass.intType)) {
+      } else if (field.getType().isArray() && field.getType().getComponentType().subtypeOf(CtClass.intType)) {
         findResourceString = "getIntArray(" + id + ")";
       } else if (isSubClass(classPool, field.getType(), Animation.class)) {
         root = null;

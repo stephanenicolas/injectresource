@@ -100,6 +100,9 @@ modifyPom {
   }
 }
 
+//TODO create task
+//~/android-sdks/build-tools/19.1.0/aapt p -v -f -I /Users/administrateur/android-sdks/platforms/android-20/android.jar -M src/test/java/AndroidManifest.xml -S src/test/resources/ -m -J src/test/java/com/test/injectresource/
+
 //as we want to have non test classes in test source tree
 //http://stackoverflow.com/a/14947906/693752
 tasks.withType(Test) {
