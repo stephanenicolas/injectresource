@@ -32,7 +32,7 @@ import static java.lang.String.format;
  *
  * <pre>
  * <ul>
- *   <li>for activities :
+ *   <li>for activities and services :
  *     <ul>
  *       <li>right after super.onCreate in onCreate
  *     </ul>
