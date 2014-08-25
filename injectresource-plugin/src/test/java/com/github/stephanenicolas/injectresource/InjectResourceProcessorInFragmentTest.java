@@ -30,8 +30,6 @@ public class InjectResourceProcessorInFragmentTest {
   public static final int RESOURCE_COLOR_STATE_LIST = R.color.colorlist;
   public static final String TAG = "TAG";
 
-  private InjectResourceProcessor processor = new InjectResourceProcessor();
-
   @Test
   public void shouldInjectResource_simple() {
     TestActivity activity = Robolectric.buildActivity(TestActivity.class)

@@ -13,9 +13,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtConstructor;
 import javassist.CtField;
 import javassist.NotFoundException;
 import javassist.build.IClassTransformer;
@@ -58,19 +60,32 @@ import static java.lang.String.format;
 @Slf4j
 public class InjectResourceProcessor implements IClassTransformer {
 
+  private final static String GET_APPLICATION_TAG = "GET_APPLICATION_TAG";
+  private static final String GET_ROOT = "GET_ROOT";
+
   AfterBurner afterBurner = new AfterBurner();
 
   @Override
   public boolean shouldTransform(CtClass candidateClass) throws JavassistBuildException {
     try {
-      ClassPool classPool = candidateClass.getClassPool();
-      final List<CtField> resources =
+      final List<CtField> fields =
           getAllInjectedFieldsForAnnotation(candidateClass, InjectResource.class);
 
-      boolean shouldTransform = !resources.isEmpty();
+      if (fields.isEmpty()) {
+        return false;
+      }
+
+      boolean isAcceptedClass = isActivity(candidateClass) || isFragment(candidateClass)
+          || isSupportFragment(candidateClass) || isView(candidateClass);
+
+      if (!isAcceptedClass) {
+        List<CtConstructor> ctConstructors = extractValidConstructors(candidateClass);
+        isAcceptedClass = !ctConstructors.isEmpty();
+      }
+      
       log.debug(
-          "Class " + candidateClass.getSimpleName() + " will get transformed: " + shouldTransform);
-      return shouldTransform;
+          "Class " + candidateClass.getSimpleName() + " will get transformed: " + isAcceptedClass);
+      return isAcceptedClass;
     } catch (Exception e) {
       String message = format("Error while filtering class %s", candidateClass.getName());
       log.debug(message, e);
@@ -86,10 +101,8 @@ public class InjectResourceProcessor implements IClassTransformer {
     try {
       final List<CtField> fields =
           getAllInjectedFieldsForAnnotation(classToTransform, InjectResource.class);
-      String getApplicationString = getApplicationString(classToTransform);
-      String getResourceString = getResourceString(getApplicationString);
-      String injectViewStatements =
-          injectResourceStatements(fields, classToTransform, getApplicationString);
+      String getResourceString = getResourceString();
+      String injectViewStatements = injectResourceStatements(fields, classToTransform);
       StringBuffer buffer = new StringBuffer();
       buffer.append(getResourceString);
       buffer.append(";\n");
@@ -113,18 +126,40 @@ public class InjectResourceProcessor implements IClassTransformer {
     boolean isView = isView(targetClazz);
 
     if (isActivity) {
+      body = insertApplicationString(targetClazz, body, "this");
       afterBurner.afterOverrideMethod(targetClazz, "onCreate", body);
     } else if (isFragment || isSupportFragment) {
+      body = insertApplicationString(targetClazz, body, "this");
       afterBurner.afterOverrideMethod(targetClazz, "onAttach", body);
     } else if (isView) {
+      body = insertApplicationString(targetClazz, body, "this");
       afterBurner.afterOverrideMethod(targetClazz, "onFinishInflate", body);
-    }  else {
-      throw new InjectResourceException(format(
-          "Injecting resource in %s is not supported. Injection is supported in Activities, "
-              + "Fragments (native and support), views and classes with a single constructor "
-              + "that accept a single paramater which has to "
-              + "be of one of the type listed earlier.", targetClazz));
+    } else {
+      List<CtConstructor> ctConstructors = extractValidConstructors(targetClazz);
+      if (ctConstructors.isEmpty()) {
+        throw new InjectResourceException(format(
+            "Injecting resource in %s is not supported. Injection is supported in Activities, "
+                + "Fragments (native and support), views and classes with a single constructor "
+                + "that accept a single paramater which has to "
+                + "be of one of the type listed earlier.", targetClazz));
+      }
+      for (CtConstructor ctConstructor : ctConstructors) {
+        CtClass ctParamClass = ctConstructor.getParameterTypes()[0];
+        String bodyCopy = insertApplicationString(ctParamClass, body, "$1");
+        log.debug(format("Body to be injected in constructor with type %s: %s", ctParamClass.getName(),
+            bodyCopy));
+        ctConstructor.insertBeforeBody(bodyCopy);
+      }
     }
+  }
+
+  private String insertApplicationString(CtClass targetClazz, String body, String root) {
+    //need a fresh copy for each call (constructor loop for instance)
+    String bodyCopy = new String(body);
+    String getApplicationString = getApplicationString(targetClazz);
+    getApplicationString = getApplicationString.replaceAll(GET_ROOT, Matcher.quoteReplacement(root));
+    bodyCopy = bodyCopy.replaceAll(GET_APPLICATION_TAG, Matcher.quoteReplacement(getApplicationString));
+    return bodyCopy;
   }
 
   private String getApplicationString(CtClass targetClazz) {
@@ -134,18 +169,18 @@ public class InjectResourceProcessor implements IClassTransformer {
     boolean isView = isView(targetClazz);
 
     if (isActivity) {
-      return "getApplication()";
+      return GET_ROOT + ".getApplication()";
     } else if (isFragment || isSupportFragment) {
-      return "getActivity().getApplication()";
+      return GET_ROOT + ".getActivity().getApplication()";
     } else if (isView) {
-      return "((android.app.Application) getContext().getApplicationContext())";
+      return "((android.app.Application) " + GET_ROOT + ".getContext().getApplicationContext())";
     } else {
-      throw new IllegalStateException("How did we get there ?");
+      throw new RuntimeException("How did we get there ?");
     }
   }
 
-  private String getResourceString(String getApplicationString) {
-    return "android.content.res.Resources resources = " + getApplicationString + ".getResources()";
+  private String getResourceString() {
+    return "android.content.res.Resources resources = " + GET_APPLICATION_TAG + ".getResources()";
   }
 
   private List<CtField> getAllInjectedFieldsForAnnotation(CtClass clazz,
@@ -164,8 +199,31 @@ public class InjectResourceProcessor implements IClassTransformer {
     return result;
   }
 
-  private String injectResourceStatements(List<CtField> viewsToInject, CtClass targetClazz,
-      String getApplicationString) throws ClassNotFoundException, NotFoundException {
+  private List<CtConstructor> extractValidConstructors(final CtClass classToTransform) {
+    try {
+      List<CtConstructor> constructors = new ArrayList<CtConstructor>();
+      CtConstructor[] declaredConstructors = classToTransform.getDeclaredConstructors();
+      for (CtConstructor constructor : declaredConstructors) {
+        CtClass[] paramClasses = constructor.getParameterTypes();
+        if (paramClasses.length >= 1) {
+          if (isView(paramClasses[0])) {
+            constructors.add(constructor);
+          } else if (isActivity(paramClasses[0])) {
+            constructors.add(constructor);
+          } else if (isFragment(paramClasses[0])) {
+            constructors.add(constructor);
+          }  else if (isSupportFragment(paramClasses[0])) {
+            constructors.add(constructor);
+          }
+        }
+      }
+      return constructors;
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  private String injectResourceStatements(List<CtField> viewsToInject, CtClass targetClazz) throws ClassNotFoundException, NotFoundException {
     StringBuffer buffer = new StringBuffer();
     for (CtField field : viewsToInject) {
       Object annotation = field.getAnnotation(InjectResource.class);
@@ -209,17 +267,14 @@ public class InjectResourceProcessor implements IClassTransformer {
         findResourceString = "new Integer(resources.getInteger(" + id + "))";
       } else if (isSubClass(classPool, field.getType(), Drawable.class)) {
         findResourceString = "getDrawable(" + id + ")";
-      } else if (field.getType().isArray() && isSubClass(classPool,
-          field.getType().getComponentType(), String.class)) {
+      } else if (isStringArray(field, classPool)) {
         findResourceString = "getStringArray(" + id + ")";
-      } else if (field.getType().isArray() && field.getType()
-          .getComponentType()
-          .subtypeOf(CtClass.intType)) {
+      } else if (isIntArray(field)) {
         findResourceString = "getIntArray(" + id + ")";
       } else if (isSubClass(classPool, field.getType(), Animation.class)) {
         root = null;
         findResourceString = "android.view.animation.AnimationUtils.loadAnimation("
-            + getApplicationString
+            + GET_APPLICATION_TAG
             + ", "
             + id
             + ")";
@@ -238,6 +293,17 @@ public class InjectResourceProcessor implements IClassTransformer {
       buffer.append(";\n");
     }
     return buffer.toString();
+  }
+
+  private boolean isStringArray(CtField field, ClassPool classPool) throws NotFoundException {
+    return field.getType().isArray() && isSubClass(classPool, field.getType().getComponentType(),
+        String.class);
+  }
+
+  private boolean isIntArray(CtField field) throws NotFoundException {
+    return field.getType().isArray() && field.getType()
+        .getComponentType()
+        .subtypeOf(CtClass.intType);
   }
 
   private boolean isActivity(CtClass clazz) {
