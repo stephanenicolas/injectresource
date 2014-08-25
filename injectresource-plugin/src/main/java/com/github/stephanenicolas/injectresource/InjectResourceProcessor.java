@@ -75,8 +75,8 @@ import static java.lang.String.format;
  *     </ul>
  *   <li>for other classes (namely MVP presenters and view holder design patterns) :
  *     <ul>
- *       <li>right before any constructor with an argument of type Activity, Service,
- *       Fragment, or View
+ *       <li>right before any constructor with an argument of a supported type
+ *       (except BroadcastReceivers)
  *       <li>inner classes can only be processed if they are static
  *     </ul>
  * </ul>
