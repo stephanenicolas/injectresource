@@ -48,9 +48,9 @@ import static java.lang.String.format;
  *     </ul>
  *   <li>for other classes (namely MVP presenters and view holder design patterns) :
  *     <ul>
- *       <li>right before any constructor with a single argument of type Activity, Fragment, or
+ *       <li>right before any constructor with a first argument of type Activity, Fragment, or
  * View
- *       <li>static inner classes can only be processed if static
+ *       <li>inner classes can only be processed if they are static
  *     </ul>
  * </ul>
  * </pre>
@@ -61,9 +61,9 @@ import static java.lang.String.format;
 public class InjectResourceProcessor implements IClassTransformer {
 
   private final static String GET_APPLICATION_TAG = "GET_APPLICATION_TAG";
-  private static final String GET_ROOT = "GET_ROOT";
+  private static final String GET_ROOT_TAG = "GET_ROOT";
 
-  AfterBurner afterBurner = new AfterBurner();
+  private AfterBurner afterBurner = new AfterBurner();
 
   @Override
   public boolean shouldTransform(CtClass candidateClass) throws JavassistBuildException {
@@ -75,14 +75,15 @@ public class InjectResourceProcessor implements IClassTransformer {
         return false;
       }
 
-      boolean isAcceptedClass = isActivity(candidateClass) || isFragment(candidateClass)
-          || isSupportFragment(candidateClass) || isView(candidateClass);
+      boolean isAcceptedClass =
+          isActivity(candidateClass) || isFragment(candidateClass) || isSupportFragment(
+              candidateClass) || isView(candidateClass);
 
       if (!isAcceptedClass) {
         List<CtConstructor> ctConstructors = extractValidConstructors(candidateClass);
         isAcceptedClass = !ctConstructors.isEmpty();
       }
-      
+
       log.debug(
           "Class " + candidateClass.getSimpleName() + " will get transformed: " + isAcceptedClass);
       return isAcceptedClass;
@@ -107,9 +108,9 @@ public class InjectResourceProcessor implements IClassTransformer {
       buffer.append(getResourceString);
       buffer.append(";\n");
       buffer.append(injectViewStatements);
-      String body = buffer.toString();
-      log.debug("Inserted :" + body);
-      injectStuff(classToTransform, body);
+      String preliminaryBody = buffer.toString();
+      log.debug("Preliminary body (before insertion) :" + preliminaryBody);
+      injectStuff(classToTransform, preliminaryBody);
     } catch (Exception e) {
       String message = format("Error while processing class %s", classToTransform.getName());
       log.debug(message, e);
@@ -117,7 +118,7 @@ public class InjectResourceProcessor implements IClassTransformer {
     }
   }
 
-  private void injectStuff(CtClass targetClazz, String body)
+  private void injectStuff(CtClass targetClazz, String preliminaryBody)
       throws CannotCompileException, AfterBurnerImpossibleException, NotFoundException,
       InjectResourceException {
     boolean isActivity = isActivity(targetClazz);
@@ -126,14 +127,14 @@ public class InjectResourceProcessor implements IClassTransformer {
     boolean isView = isView(targetClazz);
 
     if (isActivity) {
-      body = insertApplicationString(targetClazz, body, "this");
-      afterBurner.afterOverrideMethod(targetClazz, "onCreate", body);
+      preliminaryBody = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
+      afterBurner.afterOverrideMethod(targetClazz, "onCreate", preliminaryBody);
     } else if (isFragment || isSupportFragment) {
-      body = insertApplicationString(targetClazz, body, "this");
-      afterBurner.afterOverrideMethod(targetClazz, "onAttach", body);
+      preliminaryBody = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
+      afterBurner.afterOverrideMethod(targetClazz, "onAttach", preliminaryBody);
     } else if (isView) {
-      body = insertApplicationString(targetClazz, body, "this");
-      afterBurner.afterOverrideMethod(targetClazz, "onFinishInflate", body);
+      preliminaryBody = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
+      afterBurner.afterOverrideMethod(targetClazz, "onFinishInflate", preliminaryBody);
     } else {
       List<CtConstructor> ctConstructors = extractValidConstructors(targetClazz);
       if (ctConstructors.isEmpty()) {
@@ -144,21 +145,48 @@ public class InjectResourceProcessor implements IClassTransformer {
                 + "be of one of the type listed earlier.", targetClazz));
       }
       for (CtConstructor ctConstructor : ctConstructors) {
-        CtClass ctParamClass = ctConstructor.getParameterTypes()[0];
-        String bodyCopy = insertApplicationString(ctParamClass, body, "$1");
-        log.debug(format("Body to be injected in constructor with type %s: %s", ctParamClass.getName(),
-            bodyCopy));
+        CtClass[] parameterTypes = ctConstructor.getParameterTypes();
+        int indexParam = findValidParamIndex(parameterTypes);
+        log.debug(
+            format("Valid param in constructor with type %s: %d", ctConstructor.getSignature(),
+                indexParam));
+        CtClass ctParamClass = parameterTypes[indexParam];
+        String bodyCopy = createBodyWithInsertion(ctParamClass, preliminaryBody, "$" + (1+indexParam));
+        log.debug(
+            format("Body to be injected in constructor with type %s: %s", ctParamClass.getName(),
+                bodyCopy));
         ctConstructor.insertBeforeBody(bodyCopy);
       }
     }
   }
 
-  private String insertApplicationString(CtClass targetClazz, String body, String root) {
+  private int findValidParamIndex(CtClass[] parameterTypes) {
+    int indexParam = 0;
+    for (CtClass paramClass : parameterTypes) {
+      if (isValidClass(paramClass)) {
+        return indexParam;
+      } else {
+        indexParam++;
+      }
+    }
+    return -1;
+  }
+
+  private boolean isValidClass(CtClass paramClass) {
+    return isView(paramClass)
+        || isActivity(paramClass)
+        || isFragment(paramClass)
+        || isSupportFragment(paramClass);
+  }
+
+  private String createBodyWithInsertion(CtClass targetClazz, String preliminaryBody, String root) {
     //need a fresh copy for each call (constructor loop for instance)
-    String bodyCopy = new String(body);
+    String bodyCopy = new String(preliminaryBody);
     String getApplicationString = getApplicationString(targetClazz);
-    getApplicationString = getApplicationString.replaceAll(GET_ROOT, Matcher.quoteReplacement(root));
-    bodyCopy = bodyCopy.replaceAll(GET_APPLICATION_TAG, Matcher.quoteReplacement(getApplicationString));
+    getApplicationString =
+        getApplicationString.replaceAll(GET_ROOT_TAG, Matcher.quoteReplacement(root));
+    bodyCopy =
+        bodyCopy.replaceAll(GET_APPLICATION_TAG, Matcher.quoteReplacement(getApplicationString));
     return bodyCopy;
   }
 
@@ -169,11 +197,13 @@ public class InjectResourceProcessor implements IClassTransformer {
     boolean isView = isView(targetClazz);
 
     if (isActivity) {
-      return GET_ROOT + ".getApplication()";
+      return GET_ROOT_TAG + ".getApplication()";
     } else if (isFragment || isSupportFragment) {
-      return GET_ROOT + ".getActivity().getApplication()";
+      return GET_ROOT_TAG + ".getActivity().getApplication()";
     } else if (isView) {
-      return "((android.app.Application) " + GET_ROOT + ".getContext().getApplicationContext())";
+      return "((android.app.Application) "
+          + GET_ROOT_TAG
+          + ".getContext().getApplicationContext())";
     } else {
       throw new RuntimeException("How did we get there ?");
     }
@@ -206,14 +236,10 @@ public class InjectResourceProcessor implements IClassTransformer {
       for (CtConstructor constructor : declaredConstructors) {
         CtClass[] paramClasses = constructor.getParameterTypes();
         if (paramClasses.length >= 1) {
-          if (isView(paramClasses[0])) {
-            constructors.add(constructor);
-          } else if (isActivity(paramClasses[0])) {
-            constructors.add(constructor);
-          } else if (isFragment(paramClasses[0])) {
-            constructors.add(constructor);
-          }  else if (isSupportFragment(paramClasses[0])) {
-            constructors.add(constructor);
+          for (CtClass paramClass : paramClasses) {
+            if (isValidClass(paramClass)) {
+              constructors.add(constructor);
+            }
           }
         }
       }
@@ -223,7 +249,8 @@ public class InjectResourceProcessor implements IClassTransformer {
     }
   }
 
-  private String injectResourceStatements(List<CtField> viewsToInject, CtClass targetClazz) throws ClassNotFoundException, NotFoundException {
+  private String injectResourceStatements(List<CtField> viewsToInject, CtClass targetClazz)
+      throws ClassNotFoundException, NotFoundException {
     StringBuffer buffer = new StringBuffer();
     for (CtField field : viewsToInject) {
       Object annotation = field.getAnnotation(InjectResource.class);
