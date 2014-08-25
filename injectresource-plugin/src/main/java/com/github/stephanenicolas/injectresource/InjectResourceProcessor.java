@@ -1,6 +1,7 @@
 package com.github.stephanenicolas.injectresource;
 
 import android.app.Activity;
+import android.app.Application;
 import android.app.Fragment;
 import android.app.Service;
 import android.content.res.ColorStateList;
@@ -13,6 +14,7 @@ import com.github.stephanenicolas.afterburner.exception.AfterBurnerImpossibleExc
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import javassist.CannotCompileException;
@@ -28,11 +30,21 @@ import lombok.extern.slf4j.Slf4j;
 import static java.lang.String.format;
 
 /**
- * Will inject all resources.
+ * Will inject all resources in the following supported classes :
+ * <ul>
+ *   <li>Activity</li>
+ *   <li>Service</li>
+ *   <li>Application</li>
+ *   <li>Fragment</li>
+ *   <li>support Fragment</li>
+ *   <li>Views</li>
+ *   <li>and any other class that defines a constructor with an argument
+ *   that is in the list above</li>
+ * </ul>
  *
  * <pre>
  * <ul>
- *   <li>for activities and services :
+ *   <li>for activities, services and Application:
  *     <ul>
  *       <li>right after super.onCreate in onCreate
  *     </ul>
@@ -49,8 +61,8 @@ import static java.lang.String.format;
  *     </ul>
  *   <li>for other classes (namely MVP presenters and view holder design patterns) :
  *     <ul>
- *       <li>right before any constructor with a first argument of type Activity, Fragment, or
- * View
+ *       <li>right before any constructor with an argument of type Activity, Service,
+ *       Fragment, or View
  *       <li>inner classes can only be processed if they are static
  *     </ul>
  * </ul>
@@ -83,8 +95,8 @@ public class InjectResourceProcessor implements IClassTransformer {
         isAcceptedClass = !ctConstructors.isEmpty();
       }
 
-      log.debug(
-          "Class " + candidateClass.getSimpleName() + " will get transformed: " + isAcceptedClass);
+      log.debug(format("Class %s will get transformed: %b", candidateClass.getSimpleName(),
+          isAcceptedClass));
       return isAcceptedClass;
     } catch (Exception e) {
       String message = format("Error while filtering class %s", candidateClass.getName());
@@ -103,10 +115,10 @@ public class InjectResourceProcessor implements IClassTransformer {
           getAllInjectedFieldsForAnnotation(classToTransform, InjectResource.class);
       String getResourceString = getResourceString();
       String injectViewStatements = injectResourceStatements(fields, classToTransform);
+
       StringBuffer buffer = new StringBuffer();
-      buffer.append(getResourceString);
-      buffer.append(";\n");
-      buffer.append(injectViewStatements);
+      buffer.append(getResourceString).append(";\n").append(injectViewStatements);
+
       String preliminaryBody = buffer.toString();
       log.debug("Preliminary body (before insertion) :" + preliminaryBody);
       injectStuff(classToTransform, preliminaryBody);
@@ -122,7 +134,7 @@ public class InjectResourceProcessor implements IClassTransformer {
       throws CannotCompileException, AfterBurnerImpossibleException, NotFoundException,
       InjectResourceException {
 
-    if (isActivity(targetClazz) || isService(targetClazz)) {
+    if (isActivity(targetClazz) || isService(targetClazz) || isApplication(targetClazz)) {
       preliminaryBody = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
       afterBurner.afterOverrideMethod(targetClazz, "onCreate", preliminaryBody);
     } else if (isFragment(targetClazz) || isSupportFragment(targetClazz)) {
@@ -146,6 +158,7 @@ public class InjectResourceProcessor implements IClassTransformer {
         log.debug(
             format("Valid param in constructor with type %s: %d", ctConstructor.getSignature(),
                 indexParam));
+
         CtClass ctParamClass = parameterTypes[indexParam];
         String bodyCopy =
             createBodyWithInsertion(ctParamClass, preliminaryBody, "$" + (1 + indexParam));
@@ -182,7 +195,9 @@ public class InjectResourceProcessor implements IClassTransformer {
 
   //extension point for new classes
   private String getApplicationString(CtClass targetClazz) {
-    if (isActivity(targetClazz) || isService(targetClazz)) {
+    if (isApplication(targetClazz)) {
+      return GET_ROOT_TAG;
+    } else if (isActivity(targetClazz) || isService(targetClazz)) {
       return GET_ROOT_TAG + ".getApplication()";
     } else if (isFragment(targetClazz) || isSupportFragment(targetClazz)) {
       return GET_ROOT_TAG + ".getActivity().getApplication()";
@@ -225,13 +240,15 @@ public class InjectResourceProcessor implements IClassTransformer {
           for (CtClass paramClass : paramClasses) {
             if (isValidClass(paramClass)) {
               constructors.add(constructor);
+              continue;
             }
           }
         }
       }
       return constructors;
     } catch (Exception e) {
-      return null;
+      log.debug("Problem in extraction of constructors", e);
+      return Collections.EMPTY_LIST;
     }
   }
 
@@ -320,12 +337,9 @@ public class InjectResourceProcessor implements IClassTransformer {
   }
 
   //extension point for new classes
-  private boolean isValidClass(CtClass paramClass) {
-    return isView(paramClass)
-        || isActivity(paramClass)
-        || isService(paramClass)
-        || isFragment(paramClass)
-        || isSupportFragment(paramClass);
+  private boolean isValidClass(CtClass clazz) {
+    return isView(clazz) || isActivity(clazz) || isService(clazz)
+        || isApplication(clazz)  || isFragment(clazz) || isSupportFragment(clazz);
   }
 
   private boolean isActivity(CtClass clazz) {
@@ -339,6 +353,14 @@ public class InjectResourceProcessor implements IClassTransformer {
   private boolean isService(CtClass clazz) {
     try {
       return isSubClass(clazz.getClassPool(), clazz, Service.class);
+    } catch (NotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private boolean isApplication(CtClass clazz) {
+    try {
+      return isSubClass(clazz.getClassPool(), clazz, Application.class);
     } catch (NotFoundException e) {
       throw new RuntimeException(e);
     }
