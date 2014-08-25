@@ -2,22 +2,17 @@ package com.github.stephanenicolas.injectresource;
 
 import android.app.Activity;
 import android.app.Fragment;
-import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Movie;
-import android.os.Bundle;
 import android.view.View;
 import android.view.animation.Animation;
 import com.test.injectresource.R;
 import javassist.ClassPool;
-import javassist.NotFoundException;
-import javassist.build.JavassistBuildException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 

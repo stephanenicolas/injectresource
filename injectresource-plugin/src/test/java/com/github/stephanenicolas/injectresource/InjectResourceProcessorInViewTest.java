@@ -31,13 +31,9 @@ public class InjectResourceProcessorInViewTest {
   public static final int RESOURCE_COLOR_STATE_LIST = R.color.colorlist;
   public static final String TAG = "TAG";
 
-  private InjectResourceProcessor processor = new InjectResourceProcessor();
-
   @Test
   public void shouldInjectResource_simple() {
-    TestActivity activity = Robolectric.buildActivity(TestActivity.class)
-        .create()
-        .get();
+    TestActivity activity = Robolectric.buildActivity(TestActivity.class).create().get();
     assertThat(activity.view.string, is(Robolectric.application.getText(RESOURCE_ID_STRING)));
     assertThat(activity.view.intA,
         is(Robolectric.application.getResources().getInteger(RESOURCE_ID_INTEGER)));

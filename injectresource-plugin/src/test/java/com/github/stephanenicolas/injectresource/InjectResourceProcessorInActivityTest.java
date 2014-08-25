@@ -3,20 +3,15 @@ package com.github.stephanenicolas.injectresource;
 import android.app.Activity;
 import android.content.res.ColorStateList;
 import android.graphics.Movie;
-import android.os.Bundle;
 import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import com.test.injectresource.R;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 
-import static com.github.stephanenicolas.injectresource.InjectResourceTestRunner.*;
 import static org.hamcrest.CoreMatchers.is;
-
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import org.robolectric.Robolectric;
-import org.robolectric.annotation.Config;
 
 /**
  * @author SNI
@@ -34,11 +29,9 @@ public class InjectResourceProcessorInActivityTest {
 
   @Test
   public void shouldInjectResource_simple() {
-    TestActivity activity = Robolectric.buildActivity(TestActivity.class)
-        .create()
-        .get();
-    assertThat(activity.string, is(Robolectric.application.getResources().getString(
-        RESOURCE_ID_STRING)));
+    TestActivity activity = Robolectric.buildActivity(TestActivity.class).create().get();
+    assertThat(activity.string,
+        is(Robolectric.application.getResources().getString(RESOURCE_ID_STRING)));
     assertThat(activity.intA,
         is(Robolectric.application.getResources().getInteger(RESOURCE_ID_INTEGER)));
     assertThat(activity.intB,

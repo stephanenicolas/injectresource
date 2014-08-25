@@ -151,7 +151,8 @@ public class InjectResourceProcessor implements IClassTransformer {
             format("Valid param in constructor with type %s: %d", ctConstructor.getSignature(),
                 indexParam));
         CtClass ctParamClass = parameterTypes[indexParam];
-        String bodyCopy = createBodyWithInsertion(ctParamClass, preliminaryBody, "$" + (1+indexParam));
+        String bodyCopy =
+            createBodyWithInsertion(ctParamClass, preliminaryBody, "$" + (1 + indexParam));
         log.debug(
             format("Body to be injected in constructor with type %s: %s", ctParamClass.getName(),
                 bodyCopy));

@@ -2,25 +2,18 @@ package com.github.stephanenicolas.injectresource;
 
 import com.test.injectresource.R;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.URL;
-import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
-import javassist.NotFoundException;
-import javassist.build.JavassistBuildException;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.runners.model.InitializationError;
 import org.robolectric.AndroidManifest;
-import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.SdkConfig;
 import org.robolectric.annotation.Config;
 import org.robolectric.bytecode.AsmInstrumentingClassLoader;
 import org.robolectric.bytecode.Setup;
 import org.robolectric.res.Fs;
-import org.robolectric.res.FsFile;
-import org.robolectric.shadows.ShadowResources;
 
 /**
  * Created by administrateur on 2014-08-21.
@@ -47,7 +40,8 @@ public class InjectResourceTestRunner extends RobolectricTestRunner {
               processor.applyTransformations(dummyClass);
               byte[] bytes = dummyClass.toBytecode();
               System.out.println("Size of weaved byte code :" + bytes.length);
-              FileOutputStream fileOutputStream = new FileOutputStream("/tmp/" + className + ".class");
+              FileOutputStream fileOutputStream =
+                  new FileOutputStream("/tmp/" + className + ".class");
               fileOutputStream.write(bytes);
               fileOutputStream.close();
               return bytes;
@@ -75,5 +69,4 @@ public class InjectResourceTestRunner extends RobolectricTestRunner {
       return R.class;
     }
   }
-
 }

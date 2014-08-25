@@ -32,9 +32,7 @@ public class InjectResourceProcessorInFragmentTest {
 
   @Test
   public void shouldInjectResource_simple() {
-    TestActivity activity = Robolectric.buildActivity(TestActivity.class)
-        .create()
-        .get();
+    TestActivity activity = Robolectric.buildActivity(TestActivity.class).create().get();
     assertThat(activity.fragment.string, is(Robolectric.application.getText(RESOURCE_ID_STRING)));
     assertThat(activity.fragment.intA,
         is(Robolectric.application.getResources().getInteger(RESOURCE_ID_INTEGER)));

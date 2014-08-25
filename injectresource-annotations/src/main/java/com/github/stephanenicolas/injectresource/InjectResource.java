@@ -15,11 +15,11 @@
  */
 package com.github.stephanenicolas.injectresource;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Indicates that a variable member of a class (whether static or not) should be
@@ -37,9 +37,9 @@ import java.lang.annotation.Target;
  *
  * @author Mike Burton
  */
-@Retention(RUNTIME)
-@Target( { ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD })
+@Retention(RUNTIME) @Target({ ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD })
 public @interface InjectResource {
   int value() default -1;
+
   String name() default "";
 }

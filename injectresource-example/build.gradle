@@ -15,7 +15,7 @@ buildscript {
   dependencies {
     classpath 'com.android.tools.build:gradle:0.12.2'
     classpath 'com.github.stephanenicolas.morpheus:morpheus-plugin:1.0.0'
-    classpath ("com.github.stephanenicolas.injectresource:injectresource-plugin:1.0.0-SNAPSHOT")
+    classpath("com.github.stephanenicolas.injectresource:injectresource-plugin:1.0.0-SNAPSHOT")
     //if support is needed add this
     //also see repositories section
     //classpath 'com.android.support:support-v4:19.1.0'
@@ -93,7 +93,7 @@ import com.github.stephanenicolas.injectresource.InjectResourceProcessor;
 gradle.projectsEvaluated {
   //testDebug should trigger transformation of source classes (not tests)
   tasks.withType(JavaCompile) { task ->
-    if( task.name.contains('Test')) {
+    if (task.name.contains('Test')) {
       def matcher = task.name =~ "Test(.*)Java"
       String variantName = matcher[0][1]
       String transformerClassName = InjectResourceProcessor.class.getSimpleName()

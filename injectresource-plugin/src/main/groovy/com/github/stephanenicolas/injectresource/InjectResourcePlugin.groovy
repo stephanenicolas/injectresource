@@ -1,8 +1,8 @@
 package com.github.stephanenicolas.injectresource
 
-import com.github.stephanenicolas.morpheus.AbstractMorpheusPlugin;
-import javassist.build.IClassTransformer;
-import org.gradle.api.Project;
+import com.github.stephanenicolas.morpheus.AbstractMorpheusPlugin
+import javassist.build.IClassTransformer
+import org.gradle.api.Project
 
 /**
  * @author SNI
