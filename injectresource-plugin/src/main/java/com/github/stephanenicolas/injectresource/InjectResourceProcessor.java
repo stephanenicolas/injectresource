@@ -25,24 +25,21 @@ import lombok.extern.slf4j.Slf4j;
 import static java.lang.String.format;
 
 /**
- * Will inject all fields and fragments from XML.
+ * Will inject all resources.
  *
  * <pre>
  * <ul>
  *   <li>for activities :
  *     <ul>
- *       <li>if they use @ContentView : right after super.onCreate
- *       <li>if they don't use @ContentView : right after setContentView invocation in onCreate
- *       <li>it doesn't matter if you supply your own version of onCreate or setContenView or not.
+ *       <li>right after super.onCreate in onCreate
  *     </ul>
  *   <li>for fragments :
  *     <ul>
- *       <li>right after onViewCreated
- *       <li>views are destroyed right after onViewDestroyed
+ *       <li>right after super.onAttach in onAttach
  *     </ul>
  *   <li>for views :
  *     <ul>
- *       <li>right after onFinishInflate
+ *       <li>right after super.onFinishInflate in onFinishInflate
  *       <li>onFinishInflate is called automatically by Android when inflating a view from XML
  *       <li>onFinishInflate must be called manually in constructors of views with a single context
  * argument. You should invoke it after inflating your layout manually.
@@ -66,17 +63,18 @@ public class InjectResourceProcessor implements IClassTransformer {
   @Override
   public boolean shouldTransform(CtClass candidateClass) throws JavassistBuildException {
     try {
+      ClassPool classPool = candidateClass.getClassPool();
       final List<CtField> resources =
           getAllInjectedFieldsForAnnotation(candidateClass, InjectResource.class);
-      ClassPool classPool = candidateClass.getClassPool();
-      boolean isActivity = candidateClass.subtypeOf(classPool.get(Activity.class.getName()));
+
       boolean shouldTransform = !resources.isEmpty();
       log.debug(
           "Class " + candidateClass.getSimpleName() + " will get transformed: " + shouldTransform);
       return shouldTransform;
-    } catch (NotFoundException e) {
-      log.debug(format("Error while filtering class %s", candidateClass.getName()), e);
-      return false;
+    } catch (Exception e) {
+      String message = format("Error while filtering class %s", candidateClass.getName());
+      log.debug(message, e);
+      throw new JavassistBuildException(message, e);
     }
   }
 
@@ -100,7 +98,9 @@ public class InjectResourceProcessor implements IClassTransformer {
       log.debug("Inserted :" + body);
       injectStuff(classToTransform, body);
     } catch (Exception e) {
-      log.debug(format("Error while processing class %s", classToTransform.getName()), e);
+      String message = format("Error while processing class %s", classToTransform.getName());
+      log.debug(message, e);
+      throw new JavassistBuildException(message, e);
     }
   }
 
@@ -116,7 +116,9 @@ public class InjectResourceProcessor implements IClassTransformer {
       afterBurner.afterOverrideMethod(targetClazz, "onCreate", body);
     } else if (isFragment || isSupportFragment) {
       afterBurner.afterOverrideMethod(targetClazz, "onAttach", body);
-    }else {
+    } else if (isView) {
+      afterBurner.afterOverrideMethod(targetClazz, "onFinishInflate", body);
+    }  else {
       throw new InjectResourceException(format(
           "Injecting resource in %s is not supported. Injection is supported in Activities, "
               + "Fragments (native and support), views and classes with a single constructor "
@@ -135,6 +137,8 @@ public class InjectResourceProcessor implements IClassTransformer {
       return "getApplication()";
     } else if (isFragment || isSupportFragment) {
       return "getActivity().getApplication()";
+    } else if (isView) {
+      return "((android.app.Application) getContext().getApplicationContext())";
     } else {
       throw new IllegalStateException("How did we get there ?");
     }

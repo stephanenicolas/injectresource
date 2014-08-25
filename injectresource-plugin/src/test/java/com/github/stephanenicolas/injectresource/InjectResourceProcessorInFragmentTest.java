@@ -16,8 +16,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 /**
- * These tests are really complex to setup.
- * Take your time for maintenance.
  * @author SNI
  */
 @RunWith(InjectResourceTestRunner.class)

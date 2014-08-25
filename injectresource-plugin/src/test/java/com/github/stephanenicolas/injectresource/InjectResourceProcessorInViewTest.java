@@ -1,28 +1,26 @@
 package com.github.stephanenicolas.injectresource;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Movie;
 import android.os.Bundle;
+import android.view.View;
 import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import com.test.injectresource.R;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 
-import static com.github.stephanenicolas.injectresource.InjectResourceTestRunner.*;
 import static org.hamcrest.CoreMatchers.is;
-
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import org.robolectric.Robolectric;
-import org.robolectric.annotation.Config;
 
 /**
  * @author SNI
  */
 @RunWith(InjectResourceTestRunner.class)
-public class InjectResourceProcessorInActivityTest {
+public class InjectResourceProcessorInViewTest {
   public static final int RESOURCE_ID_STRING = R.string.string1;
   public static final int RESOURCE_ID_INTEGER = R.integer.integer1;
   public static final int RESOURCE_ID_BOOLEAN = R.bool.bool1;
@@ -31,6 +29,7 @@ public class InjectResourceProcessorInActivityTest {
   public static final int RESOURCE_ID_MOVIE = R.raw.small;
   public static final int RESOURCE_ID_ANIMATION = android.R.anim.fade_in;
   public static final int RESOURCE_COLOR_STATE_LIST = R.color.colorlist;
+  public static final String TAG = "TAG";
 
   private InjectResourceProcessor processor = new InjectResourceProcessor();
 
@@ -39,46 +38,60 @@ public class InjectResourceProcessorInActivityTest {
     TestActivity activity = Robolectric.buildActivity(TestActivity.class)
         .create()
         .get();
-    assertThat(activity.string, is(Robolectric.application.getResources().getString(
-        RESOURCE_ID_STRING)));
-    assertThat(activity.intA,
+    assertThat(activity.view.string, is(Robolectric.application.getText(RESOURCE_ID_STRING)));
+    assertThat(activity.view.intA,
         is(Robolectric.application.getResources().getInteger(RESOURCE_ID_INTEGER)));
-    assertThat(activity.intB,
+    assertThat(activity.view.intB,
         is(Robolectric.application.getResources().getInteger(RESOURCE_ID_INTEGER)));
-    assertThat(activity.boolA,
+    assertThat(activity.view.boolA,
         is(Robolectric.application.getResources().getBoolean(RESOURCE_ID_BOOLEAN)));
-    assertThat(activity.boolB,
+    assertThat(activity.view.boolB,
         is(Robolectric.application.getResources().getBoolean(RESOURCE_ID_BOOLEAN)));
-    assertThat(activity.arrayA,
+    assertThat(activity.view.arrayA,
         is(Robolectric.application.getResources().getStringArray(RESOURCE_ID_STRING_ARRAY)));
-    assertThat(activity.arrayB,
+    assertThat(activity.view.arrayB,
         is(Robolectric.application.getResources().getIntArray(RESOURCE_ID_INTEGER_ARRAY)));
-    assertNotNull(activity.anim);
+    assertNotNull(activity.view.anim);
     //doesn't work on Robolectric..
     //assertNotNull(activity.movie);
-    assertNotNull(activity.colorStateList);
+    assertNotNull(activity.view.colorStateList);
   }
 
   public static class TestActivity extends Activity {
-    @InjectResource(RESOURCE_ID_STRING)
-    protected String string;
-    @InjectResource(RESOURCE_ID_INTEGER)
-    protected int intA;
-    @InjectResource(RESOURCE_ID_INTEGER)
-    protected Integer intB;
-    @InjectResource(RESOURCE_ID_BOOLEAN)
-    protected boolean boolA;
-    @InjectResource(RESOURCE_ID_BOOLEAN)
-    protected Boolean boolB;
-    @InjectResource(RESOURCE_ID_STRING_ARRAY)
-    protected String[] arrayA;
-    @InjectResource(RESOURCE_ID_INTEGER_ARRAY)
-    protected int[] arrayB;
-    @InjectResource(RESOURCE_ID_MOVIE)
-    protected Movie movie;
-    @InjectResource(RESOURCE_ID_ANIMATION)
-    protected Animation anim;
-    @InjectResource(RESOURCE_COLOR_STATE_LIST)
-    protected ColorStateList colorStateList;
+
+    private TestView view;
+
+    @Override protected void onCreate(Bundle savedInstanceState) {
+      super.onCreate(savedInstanceState);
+      view = new TestView(this);
+    }
+
+    public static class TestView extends View {
+      @InjectResource(RESOURCE_ID_STRING)
+      protected String string;
+      @InjectResource(RESOURCE_ID_INTEGER)
+      protected int intA;
+      @InjectResource(RESOURCE_ID_INTEGER)
+      protected Integer intB;
+      @InjectResource(RESOURCE_ID_BOOLEAN)
+      protected boolean boolA;
+      @InjectResource(RESOURCE_ID_BOOLEAN)
+      protected Boolean boolB;
+      @InjectResource(RESOURCE_ID_STRING_ARRAY)
+      protected String[] arrayA;
+      @InjectResource(RESOURCE_ID_INTEGER_ARRAY)
+      protected int[] arrayB;
+      @InjectResource(RESOURCE_ID_MOVIE)
+      protected Movie movie;
+      @InjectResource(RESOURCE_ID_ANIMATION)
+      protected Animation anim;
+      @InjectResource(RESOURCE_COLOR_STATE_LIST)
+      protected ColorStateList colorStateList;
+
+      public TestView(Context context) {
+        super(context);
+        onFinishInflate();
+      }
+    }
   }
 }
