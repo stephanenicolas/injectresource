@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.Application;
 import android.app.Fragment;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Movie;
 import android.graphics.drawable.Drawable;
@@ -33,14 +35,15 @@ import static java.lang.String.format;
 /**
  * Will inject all resources in the following supported classes :
  * <ul>
- *   <li>Activity</li>
- *   <li>Service</li>
- *   <li>Application</li>
- *   <li>Fragment</li>
+ *   <li>{@link Activity}</li>
+ *   <li>{@link Service}</li>
+ *   <li>{@link Application}</li>
+ *   <li>{@link Fragment}</li>
  *   <li>support Fragment</li>
- *   <li>Views</li>
+ *   <li>{@link View}</li>
  *   <li>and any other class that defines a constructor with an argument
  *   that is in the list above</li>
+ *   <li>{@link BroadcastReceiver}</li>
  * </ul>
  *
  * <pre>
@@ -136,14 +139,19 @@ public class InjectResourceProcessor implements IClassTransformer {
       InjectResourceException {
 
     if (isActivity(targetClazz) || isService(targetClazz) || isApplication(targetClazz)) {
-      preliminaryBody = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
-      afterBurner.afterOverrideMethod(targetClazz, "onCreate", preliminaryBody);
+      String body = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
+      afterBurner.afterOverrideMethod(targetClazz, "onCreate", body);
     } else if (isFragment(targetClazz) || isSupportFragment(targetClazz)) {
-      preliminaryBody = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
-      afterBurner.afterOverrideMethod(targetClazz, "onAttach", preliminaryBody);
+      String body = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
+      afterBurner.afterOverrideMethod(targetClazz, "onAttach", body);
     } else if (isView(targetClazz)) {
-      preliminaryBody = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
-      afterBurner.afterOverrideMethod(targetClazz, "onFinishInflate", preliminaryBody);
+      String body = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
+      afterBurner.afterOverrideMethod(targetClazz, "onFinishInflate", body);
+    } else if (isBroadCastReceiver(targetClazz)) {
+      CtClass contextClass = targetClazz.getClassPool().get(Context.class.getName());
+      String body = createBodyWithInsertion(contextClass, preliminaryBody, "$1");
+      CtMethod onReceiveMethod = afterBurner.extractExistingMethod(targetClazz, "onReceive");
+      onReceiveMethod.insertBefore(body);
     } else {
       List<CtConstructor> ctConstructors = extractValidConstructors(targetClazz);
       if (ctConstructors.isEmpty()) {
@@ -262,6 +270,9 @@ public class InjectResourceProcessor implements IClassTransformer {
       return GET_ROOT_TAG + ".getApplication()";
     } else if (isFragment(targetClazz) || isSupportFragment(targetClazz)) {
       return GET_ROOT_TAG + ".getActivity().getApplication()";
+    } else if (isContext(targetClazz)) {
+      //WARNING isContext should be last (after other more specific contexts)
+      return "((android.app.Application) " + GET_ROOT_TAG + ".getApplicationContext())";
     } else if (isView(targetClazz)) {
       return "((android.app.Application) "
           + GET_ROOT_TAG
@@ -272,7 +283,7 @@ public class InjectResourceProcessor implements IClassTransformer {
   }
 
   private String getResourceString() {
-    return new StringBuilder().append("android.app.Application application = " )
+    return new StringBuilder().append("android.app.Application application = ")
         .append(GET_APPLICATION_TAG)
         .append(";\n")
         .append("android.content.res.Resources resources = application.getResources();\n")
@@ -364,7 +375,7 @@ public class InjectResourceProcessor implements IClassTransformer {
 
   //extension point for new classes
   private boolean isValidClass(CtClass clazz) {
-    return isView(clazz) || isActivity(clazz) || isService(clazz)
+    return isView(clazz) || isActivity(clazz) || isService(clazz) || isBroadCastReceiver(clazz)
         || isApplication(clazz)  || isFragment(clazz) || isSupportFragment(clazz);
   }
 
@@ -379,6 +390,22 @@ public class InjectResourceProcessor implements IClassTransformer {
   private boolean isService(CtClass clazz) {
     try {
       return isSubClass(clazz.getClassPool(), clazz, Service.class);
+    } catch (NotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private boolean isContext(CtClass clazz) {
+    try {
+      return isSubClass(clazz.getClassPool(), clazz, Context.class);
+    } catch (NotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private boolean isBroadCastReceiver(CtClass clazz) {
+    try {
+      return isSubClass(clazz.getClassPool(), clazz, BroadcastReceiver.class);
     } catch (NotFoundException e) {
       throw new RuntimeException(e);
     }
