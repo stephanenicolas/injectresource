@@ -1,6 +1,8 @@
 package com.github.stephanenicolas.injectresource;
 
 import android.app.Activity;
+import android.content.res.ColorStateList;
+import android.graphics.Movie;
 import android.os.Bundle;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -28,9 +30,9 @@ public class InjectResourceProcessorInActivityTest {
   public static final int RESOURCE_ID_BOOLEAN = R.bool.bool1;
   public static final int RESOURCE_ID_STRING_ARRAY = R.array.array1;
   public static final int RESOURCE_ID_INTEGER_ARRAY = R.array.intarray1;
-  //public static final int RESOURCE_ID_MOVIE = android.R.movie.copy;
+  public static final int RESOURCE_ID_MOVIE = R.raw.small;
   public static final int RESOURCE_ID_ANIMATION = android.R.anim.fade_in;
-  //public static final int RESOURCE_COLOR_STATE_LIST = android.R.color.
+  public static final int RESOURCE_COLOR_STATE_LIST = R.color.colorlist;
 
   private InjectResourceProcessor processor = new InjectResourceProcessor();
 
@@ -54,6 +56,9 @@ public class InjectResourceProcessorInActivityTest {
     assertThat(activity.arrayB,
         is(Robolectric.application.getResources().getIntArray(RESOURCE_ID_INTEGER_ARRAY)));
     assertNotNull(activity.anim);
+    //doesn't work on Robolectric..
+    //assertNotNull(activity.movie);
+    assertNotNull(activity.colorStateList);
   }
 
   public static class TestActivity extends Activity {
@@ -71,7 +76,11 @@ public class InjectResourceProcessorInActivityTest {
     protected String[] arrayA;
     @InjectResource(RESOURCE_ID_INTEGER_ARRAY)
     protected int[] arrayB;
+    @InjectResource(RESOURCE_ID_MOVIE)
+    protected Movie movie;
     @InjectResource(RESOURCE_ID_ANIMATION)
     protected Animation anim;
+    @InjectResource(RESOURCE_COLOR_STATE_LIST)
+    protected ColorStateList colorStateList;
   }
 }

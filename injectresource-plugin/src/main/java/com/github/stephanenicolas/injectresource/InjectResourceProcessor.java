@@ -3,6 +3,7 @@ package com.github.stephanenicolas.injectresource;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.res.ColorStateList;
+import android.graphics.Movie;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.animation.Animation;
@@ -187,12 +188,13 @@ public class InjectResourceProcessor implements IClassTransformer {
         findResourceString = "getDrawable(" + id + ")";
       } else if (field.getType().isArray() && isSubClass(classPool, field.getType().getComponentType(), String.class)) {
         findResourceString = "getStringArray(" + id + ")";
-      } else if (field.getType().isArray() && field.getType().getComponentType().subtypeOf(CtClass.intType)) {
+      } else if (field.getType().isArray() && field.getType().getComponentType().subtypeOf(
+          CtClass.intType)) {
         findResourceString = "getIntArray(" + id + ")";
       } else if (isSubClass(classPool, field.getType(), Animation.class)) {
         root = null;
         findResourceString = "android.view.animation.AnimationUtils.loadAnimation(" +getApplicationString + ", " + id + ")";
-      } else if (isSubClass(classPool, field.getType(), int[].class)) {
+      } else if (isSubClass(classPool, field.getType(), Movie.class)) {
         findResourceString = "getMovie(" + id + ")";
       } else {
         throw new NotFoundException(
