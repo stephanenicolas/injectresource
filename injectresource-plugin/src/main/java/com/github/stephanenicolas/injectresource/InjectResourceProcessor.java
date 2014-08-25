@@ -2,6 +2,7 @@ package com.github.stephanenicolas.injectresource;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.app.Service;
 import android.content.res.ColorStateList;
 import android.graphics.Movie;
 import android.graphics.drawable.Drawable;
@@ -75,9 +76,7 @@ public class InjectResourceProcessor implements IClassTransformer {
         return false;
       }
 
-      boolean isAcceptedClass =
-          isActivity(candidateClass) || isFragment(candidateClass) || isSupportFragment(
-              candidateClass) || isView(candidateClass);
+      boolean isAcceptedClass = isValidClass(candidateClass);
 
       if (!isAcceptedClass) {
         List<CtConstructor> ctConstructors = extractValidConstructors(candidateClass);
@@ -118,21 +117,18 @@ public class InjectResourceProcessor implements IClassTransformer {
     }
   }
 
+  //extension point for new classes
   private void injectStuff(CtClass targetClazz, String preliminaryBody)
       throws CannotCompileException, AfterBurnerImpossibleException, NotFoundException,
       InjectResourceException {
-    boolean isActivity = isActivity(targetClazz);
-    boolean isFragment = isFragment(targetClazz);
-    boolean isSupportFragment = isSupportFragment(targetClazz);
-    boolean isView = isView(targetClazz);
 
-    if (isActivity) {
+    if (isActivity(targetClazz) || isService(targetClazz)) {
       preliminaryBody = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
       afterBurner.afterOverrideMethod(targetClazz, "onCreate", preliminaryBody);
-    } else if (isFragment || isSupportFragment) {
+    } else if (isFragment(targetClazz) || isSupportFragment(targetClazz)) {
       preliminaryBody = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
       afterBurner.afterOverrideMethod(targetClazz, "onAttach", preliminaryBody);
-    } else if (isView) {
+    } else if (isView(targetClazz)) {
       preliminaryBody = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
       afterBurner.afterOverrideMethod(targetClazz, "onFinishInflate", preliminaryBody);
     } else {
@@ -173,13 +169,6 @@ public class InjectResourceProcessor implements IClassTransformer {
     return -1;
   }
 
-  private boolean isValidClass(CtClass paramClass) {
-    return isView(paramClass)
-        || isActivity(paramClass)
-        || isFragment(paramClass)
-        || isSupportFragment(paramClass);
-  }
-
   private String createBodyWithInsertion(CtClass targetClazz, String preliminaryBody, String root) {
     //need a fresh copy for each call (constructor loop for instance)
     String bodyCopy = new String(preliminaryBody);
@@ -191,17 +180,13 @@ public class InjectResourceProcessor implements IClassTransformer {
     return bodyCopy;
   }
 
+  //extension point for new classes
   private String getApplicationString(CtClass targetClazz) {
-    boolean isActivity = isActivity(targetClazz);
-    boolean isFragment = isFragment(targetClazz);
-    boolean isSupportFragment = isSupportFragment(targetClazz);
-    boolean isView = isView(targetClazz);
-
-    if (isActivity) {
+    if (isActivity(targetClazz) || isService(targetClazz)) {
       return GET_ROOT_TAG + ".getApplication()";
-    } else if (isFragment || isSupportFragment) {
+    } else if (isFragment(targetClazz) || isSupportFragment(targetClazz)) {
       return GET_ROOT_TAG + ".getActivity().getApplication()";
-    } else if (isView) {
+    } else if (isView(targetClazz)) {
       return "((android.app.Application) "
           + GET_ROOT_TAG
           + ".getContext().getApplicationContext())";
@@ -334,9 +319,26 @@ public class InjectResourceProcessor implements IClassTransformer {
         .subtypeOf(CtClass.intType);
   }
 
+  //extension point for new classes
+  private boolean isValidClass(CtClass paramClass) {
+    return isView(paramClass)
+        || isActivity(paramClass)
+        || isService(paramClass)
+        || isFragment(paramClass)
+        || isSupportFragment(paramClass);
+  }
+
   private boolean isActivity(CtClass clazz) {
     try {
       return isSubClass(clazz.getClassPool(), clazz, Activity.class);
+    } catch (NotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private boolean isService(CtClass clazz) {
+    try {
+      return isSubClass(clazz.getClassPool(), clazz, Service.class);
     } catch (NotFoundException e) {
       throw new RuntimeException(e);
     }
