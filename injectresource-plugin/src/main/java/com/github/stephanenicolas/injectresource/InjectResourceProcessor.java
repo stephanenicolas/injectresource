@@ -5,6 +5,7 @@ import android.app.Application;
 import android.app.Fragment;
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ContentProvider;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Movie;
@@ -35,22 +36,31 @@ import static java.lang.String.format;
 /**
  * Will inject all resources in the following supported classes :
  * <ul>
- *   <li>{@link Activity}</li>
- *   <li>{@link Service}</li>
- *   <li>{@link Application}</li>
- *   <li>{@link Fragment}</li>
- *   <li>support Fragment</li>
- *   <li>{@link View}</li>
- *   <li>and any other class that defines a constructor with an argument
- *   that is in the list above</li>
- *   <li>{@link BroadcastReceiver}</li>
+ * <li>{@link Activity}</li>
+ * <li>{@link Service}</li>
+ * <li>{@link Application}</li>
+ * <li>{@link Fragment}</li>
+ * <li>support Fragment</li>
+ * <li>{@link View}</li>
+ * <li>{@link ContentProvider}</li>
+ * <li>and any other class that defines a constructor with an argument
+ * that is in the list above</li>
+ * <li>{@link BroadcastReceiver}</li>
  * </ul>
  *
  * <pre>
  * <ul>
- *   <li>for activities, services and Application:
+ *   <li>for activities, services and applications:
  *     <ul>
  *       <li>right after super.onCreate in onCreate
+ *     </ul>
+ *   <li>for contentProviders:
+ *     <ul>
+ *       <li>at the beginning of onCreate
+ *     </ul>
+ *   <li>for broadcastReceivers:
+ *     <ul>
+ *       <li>at the beginning of onReceive
  *     </ul>
  *   <li>for fragments :
  *     <ul>
@@ -138,9 +148,15 @@ public class InjectResourceProcessor implements IClassTransformer {
       throws CannotCompileException, AfterBurnerImpossibleException, NotFoundException,
       InjectResourceException {
 
-    if (isActivity(targetClazz) || isService(targetClazz) || isApplication(targetClazz)) {
+    if (isActivity(targetClazz)
+        || isService(targetClazz)
+        || isApplication(targetClazz)) {
       String body = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
       afterBurner.afterOverrideMethod(targetClazz, "onCreate", body);
+    } else if (isContentProvider(targetClazz)) {
+      String body = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
+      CtMethod onReceiveMethod = afterBurner.extractExistingMethod(targetClazz, "onCreate");
+      onReceiveMethod.insertBefore(body);
     } else if (isFragment(targetClazz) || isSupportFragment(targetClazz)) {
       String body = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
       afterBurner.afterOverrideMethod(targetClazz, "onAttach", body);
@@ -273,7 +289,7 @@ public class InjectResourceProcessor implements IClassTransformer {
     } else if (isContext(targetClazz)) {
       //WARNING isContext should be last (after other more specific contexts)
       return "((android.app.Application) " + GET_ROOT_TAG + ".getApplicationContext())";
-    } else if (isView(targetClazz)) {
+    } else if (isView(targetClazz) || isContentProvider(targetClazz)) {
       return "((android.app.Application) "
           + GET_ROOT_TAG
           + ".getContext().getApplicationContext())";
@@ -341,10 +357,8 @@ public class InjectResourceProcessor implements IClassTransformer {
         findResourceString = "getIntArray(" + id + ")";
       } else if (isSubClass(classPool, field.getType(), Animation.class)) {
         root = null;
-        findResourceString = "android.view.animation.AnimationUtils.loadAnimation("
-            + "application, "
-            + id
-            + ")";
+        findResourceString =
+            "android.view.animation.AnimationUtils.loadAnimation(" + "application, " + id + ")";
       } else if (isSubClass(classPool, field.getType(), Movie.class)) {
         findResourceString = "getMovie(" + id + ")";
       } else {
@@ -375,8 +389,14 @@ public class InjectResourceProcessor implements IClassTransformer {
 
   //extension point for new classes
   private boolean isValidClass(CtClass clazz) {
-    return isView(clazz) || isActivity(clazz) || isService(clazz) || isBroadCastReceiver(clazz)
-        || isApplication(clazz)  || isFragment(clazz) || isSupportFragment(clazz);
+    return isView(clazz)
+        || isActivity(clazz)
+        || isService(clazz)
+        || isBroadCastReceiver(clazz)
+        || isContentProvider(clazz)
+        || isApplication(clazz)
+        || isFragment(clazz)
+        || isSupportFragment(clazz);
   }
 
   private boolean isActivity(CtClass clazz) {
@@ -406,6 +426,14 @@ public class InjectResourceProcessor implements IClassTransformer {
   private boolean isBroadCastReceiver(CtClass clazz) {
     try {
       return isSubClass(clazz.getClassPool(), clazz, BroadcastReceiver.class);
+    } catch (NotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private boolean isContentProvider(CtClass clazz) {
+    try {
+      return isSubClass(clazz.getClassPool(), clazz, ContentProvider.class);
     } catch (NotFoundException e) {
       throw new RuntimeException(e);
     }
