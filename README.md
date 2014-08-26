@@ -1,4 +1,4 @@
-InjectResource [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.stephanenicolas.injectResource/injectResource-plugin/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.stephanenicolas.injectresource/injectresource-plugin)
+InjectResource [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.stephanenicolas.injectresource/injectresource-plugin/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.stephanenicolas.injectresource/injectresource-plugin)
 ==========
 
 ***Injects resources automatically.***
