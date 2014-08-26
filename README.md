@@ -8,8 +8,6 @@ width="150px" />
 
 ###Usage
 
-TODO (below is not relevant yet)
-
 Inside your `build.gradle` file, add : 
 
 ```groovy
@@ -34,5 +32,3 @@ You will find an example program in the repo.
 Thanks to 
 * [morpheus](https://github.com/stephanenicolas/morpheus), byte code weaver for android.
 * [AfterBurner](https://github.com/stephanenicolas/afterburner), byte code weaving swiss army knife for Android.
-
-###TODO
