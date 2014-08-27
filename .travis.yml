@@ -11,7 +11,7 @@ before_install:
     - export LICENSES=android-sdk-license-bcbbd656
     - curl -3L https://raw.github.com/embarkmobile/android-sdk-installer/version-2/android-sdk-installer | bash /dev/stdin --install=$COMPONENTS --accept=$LICENSES
     - source ~/.android-sdk-installer/env
-    - ln -s /home/travis/.android-sdk-installer/android-sdk-linux/ /home/travis/android-sdks/
+    - ln -s /home/travis/.android-sdk-installer/android-sdk-linux/ /home/travis/android-sdks
 
 install:
     # Without TERM=dumb, we get mangled output in the Travis console
