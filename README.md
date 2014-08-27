@@ -41,3 +41,8 @@ On the same principle of byte code weaving :
 * [InjectExtra](https://github.com/stephanenicolas/injectextra)
 * [LogLifeCycle](https://github.com/stephanenicolas/loglifecycle)
 * [Hugo](https://github.com/jakewharton/hugo)
+
+### CI 
+
+[![Travis Build](https://travis-ci.org/stephanenicolas/injecteresource.svg?branch=master)](https://travis-ci.org/stephanenicolas/injecteresource)
+[![Coverage Status](https://img.shields.io/coveralls/stephanenicolas/injecteresource.svg)](https://coveralls.io/r/stephanenicolas/injecteresource)
