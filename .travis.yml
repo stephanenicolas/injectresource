@@ -12,7 +12,7 @@ before_install:
     - curl -3L https://raw.github.com/embarkmobile/android-sdk-installer/version-2/android-sdk-installer | bash /dev/stdin --install=$COMPONENTS --accept=$LICENSES
     - source ~/.android-sdk-installer/env
     - ln -s /home/travis/.android-sdk-installer/android-sdk-linux/ /home/travis/android-sdks
-    - find . | grep build
+    - find /home/travis/.android-sdk-installer/android-sdk-linux/ | grep build
 
 install:
     # Without TERM=dumb, we get mangled output in the Travis console
