@@ -44,5 +44,5 @@ On the same principle of byte code weaving :
 
 ### CI 
 
-[![Travis Build](https://travis-ci.org/stephanenicolas/injecteresource.svg?branch=master)](https://travis-ci.org/stephanenicolas/injecteresource)
-[![Coverage Status](https://img.shields.io/coveralls/stephanenicolas/injecteresource.svg)](https://coveralls.io/r/stephanenicolas/injecteresource)
+[![Travis Build](https://travis-ci.org/stephanenicolas/injectresource.svg?branch=master)](https://travis-ci.org/stephanenicolas/injectresource)
+[![Coverage Status](https://img.shields.io/coveralls/stephanenicolas/injectresource.svg)](https://coveralls.io/r/stephanenicolas/injectresource)
