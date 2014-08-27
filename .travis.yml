@@ -8,7 +8,7 @@ before_install:
     - sudo apt-get update -qq
     - sudo apt-get install -qq libstdc++6:i386 lib32z1 expect
     - export COMPONENTS=build-tools-19.1.0,android-19,extra-android-support,extra-android-m2repository,extra-google-m2repository
-    - export LICENSES=android-sdk-license-bcbbd656
+    - export LICENSES=android-sdk-license-bcbbd656,android-sdk-license-5be876d5,android-sdk-preview-license-52d11cd2
     - curl -3L https://raw.github.com/embarkmobile/android-sdk-installer/version-2/android-sdk-installer | bash /dev/stdin --install=$COMPONENTS --accept=$LICENSES
     - source ~/.android-sdk-installer/env
     - ln -s /home/travis/.android-sdk-installer/android-sdk-linux/ /home/travis/android-sdks
