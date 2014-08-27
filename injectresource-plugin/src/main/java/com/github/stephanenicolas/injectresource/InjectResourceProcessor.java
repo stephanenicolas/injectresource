@@ -310,7 +310,7 @@ public class InjectResourceProcessor implements IClassTransformer {
       String capitalizedName = fieldName.substring(0,1).toUpperCase() + (fieldName.length() > 1 ? fieldName.substring(1) : "");
       String idName = "id"+ capitalizedName;
       String initIdString = "int " + idName + " = ";
-      String realId = id>=0 ? String.valueOf(id) : "resources.getIdentifier(" + name + ",null,application.getPackageName())";
+      String realId = id>=0 ? String.valueOf(id) : "resources.getIdentifier(\"" + name + "\",null,application.getPackageName())";
       initIdString += realId + ";\n";
       buffer.append(initIdString);
 
