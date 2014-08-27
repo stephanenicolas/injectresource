@@ -19,6 +19,11 @@ repositories {
 
   //only needed to develop the lib
   mavenLocal()
+
+  //for robolectric fork and support
+  maven {
+    url 'maven_3rd_party'
+  }
 }
 
 dependencies {
