@@ -318,17 +318,20 @@ public class InjectResourceProcessor implements IClassTransformer {
       //workaround for robolectric
       //https://github.com/robolectric/robolectric/pull/1240
       int id = 0;
-      String tag = "";
+      String name = "";
       try {
         Method method = annotionClass.getMethod("value");
         id = (Integer) method.invoke(annotation);
         method = annotionClass.getMethod("name");
-        tag = (String) method.invoke(annotation);
+        name = (String) method.invoke(annotation);
       } catch (Exception e) {
         throw new RuntimeException("How can we get here ?");
       }
-      boolean isUsingId = id != -1;
 
+      String initIdString = "int id = ";
+      String realId = id>=0 ? String.valueOf(id) : "resources.getIdentifier(" + name + ",null,application.getPackageName())";
+      initIdString += realId + ";\n";
+      buffer.append(initIdString);
       buffer.append(field.getName());
       buffer.append(" = ");
 
@@ -336,31 +339,31 @@ public class InjectResourceProcessor implements IClassTransformer {
       String findResourceString = "";
       ClassPool classPool = targetClazz.getClassPool();
       if (isSubClass(classPool, field.getType(), String.class)) {
-        findResourceString = "getString(" + id + ")";
+        findResourceString = "getString(id)";
       } else if (field.getType().subtypeOf(CtClass.booleanType)) {
-        findResourceString = "getBoolean(" + id + ")";
+        findResourceString = "getBoolean(id)";
       } else if (isSubClass(classPool, field.getType(), Boolean.class)) {
         root = null;
-        findResourceString = "new Boolean(resources.getBoolean(" + id + "))";
+        findResourceString = "new Boolean(resources.getBoolean(id))";
       } else if (isSubClass(classPool, field.getType(), ColorStateList.class)) {
-        findResourceString = "getColorStateList(" + id + ")";
+        findResourceString = "getColorStateList(id)";
       } else if (field.getType().subtypeOf(CtClass.intType)) {
-        findResourceString = "getInteger(" + id + ")";
+        findResourceString = "getInteger(id)";
       } else if (isSubClass(classPool, field.getType(), Integer.class)) {
         root = null;
-        findResourceString = "new Integer(resources.getInteger(" + id + "))";
+        findResourceString = "new Integer(resources.getInteger(id))";
       } else if (isSubClass(classPool, field.getType(), Drawable.class)) {
-        findResourceString = "getDrawable(" + id + ")";
+        findResourceString = "getDrawable(id)";
       } else if (isStringArray(field, classPool)) {
-        findResourceString = "getStringArray(" + id + ")";
+        findResourceString = "getStringArray(id)";
       } else if (isIntArray(field)) {
-        findResourceString = "getIntArray(" + id + ")";
+        findResourceString = "getIntArray(id)";
       } else if (isSubClass(classPool, field.getType(), Animation.class)) {
         root = null;
         findResourceString =
-            "android.view.animation.AnimationUtils.loadAnimation(" + "application, " + id + ")";
+            "android.view.animation.AnimationUtils.loadAnimation(" + "application, id)";
       } else if (isSubClass(classPool, field.getType(), Movie.class)) {
-        findResourceString = "getMovie(" + id + ")";
+        findResourceString = "getMovie(id)";
       } else {
         throw new NotFoundException(
             format("InjectResource doen't know how to inject field %s of type %s in %s",
