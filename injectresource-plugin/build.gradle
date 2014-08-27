@@ -116,7 +116,7 @@ task('aaptTestResources') {
     "-v",
     "-f",
     "-I",
-    "$androidHome/platforms/android-20/android.jar",
+    "$androidHome/platforms/android-19/android.jar",
     "-M",
     "${project.file('src/test/java/AndroidManifest.xml')}",
     "-S",
