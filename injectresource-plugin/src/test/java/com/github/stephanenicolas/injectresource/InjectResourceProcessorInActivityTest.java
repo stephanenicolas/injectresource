@@ -50,13 +50,6 @@ public class InjectResourceProcessorInActivityTest {
     assertNotNull(activity.colorStateList);
   }
 
-  @Test
-  public void shouldInjectResource_withName() {
-    TestActivityWithResourceName activity = Robolectric.buildActivity(TestActivityWithResourceName.class).create().get();
-    assertThat(activity.string,
-        is(Robolectric.application.getResources().getString(RESOURCE_ID_STRING)));
-  }
-
   public static class TestActivity extends Activity {
     @InjectResource(RESOURCE_ID_STRING)
     protected String string;
@@ -78,10 +71,5 @@ public class InjectResourceProcessorInActivityTest {
     protected Animation anim;
     @InjectResource(RESOURCE_COLOR_STATE_LIST)
     protected ColorStateList colorStateList;
-  }
-
-  public static class TestActivityWithResourceName extends Activity {
-    @InjectResource(name = "com.test.injectresource:string/string1")
-    protected String string;
   }
 }
