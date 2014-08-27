@@ -244,28 +244,6 @@ public class InjectResourceProcessor implements IClassTransformer {
     }
   }
 
-  //private List<CtMethod> extractValidMethods(final CtClass classToTransform, String methodName) {
-  //  try {
-  //    List<CtMethod> ctMethods = new ArrayList<CtMethod>();
-  //    CtMethod[] declaredMethods = classToTransform.getDeclaredMethods();
-  //    for (CtMethod ctMethod : declaredMethods) {
-  //      CtClass[] paramClasses = ctMethod.getParameterTypes();
-  //      if (ctMethod.getName().equals(methodName) && paramClasses.length >= 1) {
-  //        for (CtClass paramClass : paramClasses) {
-  //          if (isValidClass(paramClass)) {
-  //            ctMethods.add(ctMethod);
-  //            continue;
-  //          }
-  //        }
-  //      }
-  //    }
-  //    return ctMethods;
-  //  } catch (Exception e) {
-  //    log.debug("Problem in extraction of methods", e);
-  //    return Collections.EMPTY_LIST;
-  //  }
-  //}
-
   private int findValidParamIndex(CtClass[] parameterTypes) {
     int indexParam = 0;
     for (CtClass paramClass : parameterTypes) {
@@ -306,10 +284,10 @@ public class InjectResourceProcessor implements IClassTransformer {
         .toString();
   }
 
-  private String injectResourceStatements(List<CtField> viewsToInject, CtClass targetClazz)
+  private String injectResourceStatements(List<CtField> resourcesToInject, CtClass targetClazz)
       throws ClassNotFoundException, NotFoundException {
     StringBuffer buffer = new StringBuffer();
-    for (CtField field : viewsToInject) {
+    for (CtField field : resourcesToInject) {
       Object annotation = field.getAnnotation(InjectResource.class);
       //must be accessed by introspection as I get a Proxy during tests.
       //this proxy comes from Robolectric
@@ -328,10 +306,14 @@ public class InjectResourceProcessor implements IClassTransformer {
         throw new RuntimeException("How can we get here ?");
       }
 
-      String initIdString = "int id = ";
+      String fieldName = field.getName();
+      String capitalizedName = fieldName.substring(0,1).toUpperCase() + (fieldName.length() > 1 ? fieldName.substring(1) : "");
+      String idName = "id"+ capitalizedName;
+      String initIdString = "int " + idName + " = ";
       String realId = id>=0 ? String.valueOf(id) : "resources.getIdentifier(" + name + ",null,application.getPackageName())";
       initIdString += realId + ";\n";
       buffer.append(initIdString);
+
       buffer.append(field.getName());
       buffer.append(" = ");
 
@@ -339,31 +321,31 @@ public class InjectResourceProcessor implements IClassTransformer {
       String findResourceString = "";
       ClassPool classPool = targetClazz.getClassPool();
       if (isSubClass(classPool, field.getType(), String.class)) {
-        findResourceString = "getString(id)";
+        findResourceString = "getString(" + idName + ")";
       } else if (field.getType().subtypeOf(CtClass.booleanType)) {
-        findResourceString = "getBoolean(id)";
+        findResourceString = "getBoolean(" + idName + ")";
       } else if (isSubClass(classPool, field.getType(), Boolean.class)) {
         root = null;
-        findResourceString = "new Boolean(resources.getBoolean(id))";
+        findResourceString = "new Boolean(resources.getBoolean(" + idName + "))";
       } else if (isSubClass(classPool, field.getType(), ColorStateList.class)) {
-        findResourceString = "getColorStateList(id)";
+        findResourceString = "getColorStateList(" + idName + ")";
       } else if (field.getType().subtypeOf(CtClass.intType)) {
-        findResourceString = "getInteger(id)";
+        findResourceString = "getInteger(" + idName + ")";
       } else if (isSubClass(classPool, field.getType(), Integer.class)) {
         root = null;
-        findResourceString = "new Integer(resources.getInteger(id))";
+        findResourceString = "new Integer(resources.getInteger(" + idName + "))";
       } else if (isSubClass(classPool, field.getType(), Drawable.class)) {
-        findResourceString = "getDrawable(id)";
+        findResourceString = "getDrawable(" + idName + ")";
       } else if (isStringArray(field, classPool)) {
-        findResourceString = "getStringArray(id)";
+        findResourceString = "getStringArray(" + idName + ")";
       } else if (isIntArray(field)) {
-        findResourceString = "getIntArray(id)";
+        findResourceString = "getIntArray(" + idName + ")";
       } else if (isSubClass(classPool, field.getType(), Animation.class)) {
         root = null;
         findResourceString =
-            "android.view.animation.AnimationUtils.loadAnimation(" + "application, id)";
+            "android.view.animation.AnimationUtils.loadAnimation(" + "application, " + idName + ")";
       } else if (isSubClass(classPool, field.getType(), Movie.class)) {
-        findResourceString = "getMovie(id)";
+        findResourceString = "getMovie(" + idName + ")";
       } else {
         throw new NotFoundException(
             format("InjectResource doen't know how to inject field %s of type %s in %s",
