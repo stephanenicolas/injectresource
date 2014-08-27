@@ -108,6 +108,8 @@ modifyPom {
 //process test resources via aapt. Needs ANDROID_HOME to be set
 task('aaptTestResources') {
   def androidHome = System.getenv("ANDROID_HOME")
+  androidHome = androidHome ? androidHome : "/Users/Administrateur/android-sdks/"
+
   def command = "$androidHome/build-tools/19.1.0/aapt "
   String[] args = [
     "p",
