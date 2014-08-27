@@ -32,3 +32,12 @@ You will find an example program in the repo.
 Thanks to 
 * [morpheus](https://github.com/stephanenicolas/morpheus), byte code weaver for android.
 * [AfterBurner](https://github.com/stephanenicolas/afterburner), byte code weaving swiss army knife for Android.
+
+### Related projects 
+
+On the same principle of byte code weaving : 
+
+* [InjectView](https://github.com/stephanenicolas/injectview)
+* [InjectExtra](https://github.com/stephanenicolas/injectextra)
+* [LogLifeCycle](https://github.com/stephanenicolas/loglifecycle)
+* [Hugo](https://github.com/jakewharton/hugo)
