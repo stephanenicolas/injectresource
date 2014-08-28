@@ -21,9 +21,9 @@ install:
 
 script:
     - TERM=dumb ./gradlew check
-    - cd injectresource-example
-    - ../gradlew check
-    - cd ..
+    #- cd injectresource-example
+    #- ../gradlew check
+    #- cd ..
 
 env:
   global:
