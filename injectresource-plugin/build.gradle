@@ -149,6 +149,9 @@ tasks.withType(Test) {
   include "**/*Test.class"
 }
 
+check.dependsOn test
+install.dependsOn check
+
 cobertura.coverageFormats = ['html', 'xml'] // coveralls plugin depends on xml format report
 cobertura.auxiliaryClasspath += project.files('../injectresource-annotations/build/classes/')
 cobertura.coverageIncludes = ['.*com.github.stephanenicolas.injectresource.InjectResourceProcessor']
