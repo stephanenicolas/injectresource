@@ -16,7 +16,8 @@ before_install:
 
 install:
     # Without TERM=dumb, we get mangled output in the Travis console
-    - TERM=dumb ./gradlew clean assemble
+    //avoid evaluating example project. Thx to Daryl Teo
+    - TERM=dumb ./gradlew clean install --configure-on-demand
 
 script:
     - TERM=dumb ./gradlew check
