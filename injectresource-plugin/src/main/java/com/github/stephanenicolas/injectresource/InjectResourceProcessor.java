@@ -229,11 +229,9 @@ public class InjectResourceProcessor implements IClassTransformer {
       for (CtConstructor constructor : declaredConstructors) {
         CtClass[] paramClasses = constructor.getParameterTypes();
         if (paramClasses.length >= 1) {
-          for (CtClass paramClass : paramClasses) {
-            if (isValidClass(paramClass)) {
-              constructors.add(constructor);
-              continue;
-            }
+          int indexValidParam = findValidParamIndex(paramClasses);
+          if (indexValidParam >= 0) {
+            constructors.add(constructor);
           }
         }
       }

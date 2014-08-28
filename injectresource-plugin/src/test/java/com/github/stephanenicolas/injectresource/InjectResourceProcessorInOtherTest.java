@@ -13,7 +13,9 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -63,6 +65,19 @@ public class InjectResourceProcessorInOtherTest {
   }
 
   @Test
+  public void shouldInjectResource_inConstructorWithActivityInSecondPosition() {
+    Activity activity = Robolectric.buildActivity(Activity.class).create().get();
+    TestPojo pojo = new TestPojo("", activity);
+    assertPojoHasAllFields(pojo);
+  }
+
+  @Test
+  public void shouldNotInjectResource_inConstructorWithoutValidClass() {
+    TestPojo pojo = new TestPojo("");
+    assertPojoHasNoFields(pojo);
+  }
+
+  @Test
   public void shouldInjectResource_FailsWhenNoSuitableConstructors() throws Exception {
     ClassPool pool = ClassPool.getDefault();
     pool.appendSystemPath();
@@ -88,6 +103,20 @@ public class InjectResourceProcessorInOtherTest {
     //doesn't work on Robolectric..
     //assertNotNull(activity.movie);
     assertNotNull(pojo.colorStateList);
+  }
+
+  private void assertPojoHasNoFields(TestPojo pojo) {
+    assertThat(pojo.string, is(nullValue()));
+    assertThat(pojo.intA, is(0));
+    assertThat(pojo.intB, is(nullValue()));
+    assertThat(pojo.boolA, is(false));
+    assertThat(pojo.boolB, is(nullValue()));
+    assertThat(pojo.arrayA, is(nullValue()));
+    assertThat(pojo.arrayB, is(nullValue()));
+    assertThat(pojo.anim, is(nullValue()));
+    //doesn't work on Robolectric..
+    //assertNotNull(activity.movie);
+    assertThat(pojo.colorStateList, is(nullValue()));
   }
 
   public static class TestPojo {
@@ -122,6 +151,12 @@ public class InjectResourceProcessorInOtherTest {
     }
 
     public TestPojo(View view) {
+    }
+
+    public TestPojo(String s, Activity activity) {
+    }
+
+    public TestPojo(String s) {
     }
   }
 
