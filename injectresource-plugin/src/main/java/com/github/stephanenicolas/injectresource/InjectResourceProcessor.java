@@ -148,9 +148,7 @@ public class InjectResourceProcessor implements IClassTransformer {
       throws CannotCompileException, AfterBurnerImpossibleException, NotFoundException,
       InjectResourceException {
 
-    if (isActivity(targetClazz)
-        || isService(targetClazz)
-        || isApplication(targetClazz)) {
+    if (isActivity(targetClazz) || isService(targetClazz) || isApplication(targetClazz)) {
       String body = createBodyWithInsertion(targetClazz, preliminaryBody, "this");
       afterBurner.afterOverrideMethod(targetClazz, "onCreate", body);
     } else if (isContentProvider(targetClazz)) {
@@ -195,7 +193,8 @@ public class InjectResourceProcessor implements IClassTransformer {
     }
   }
 
-  private String createBodyWithInsertion(CtClass targetClazz, String preliminaryBody, String root) {
+  private String createBodyWithInsertion(CtClass targetClazz, String preliminaryBody, String root)
+      throws NotFoundException {
     //need a fresh copy for each call (constructor loop for instance)
     String bodyCopy = new String(preliminaryBody);
     String getApplicationString = getApplicationString(targetClazz);
@@ -242,7 +241,7 @@ public class InjectResourceProcessor implements IClassTransformer {
     }
   }
 
-  private int findValidParamIndex(CtClass[] parameterTypes) {
+  private int findValidParamIndex(CtClass[] parameterTypes) throws NotFoundException {
     int indexParam = 0;
     for (CtClass paramClass : parameterTypes) {
       if (isValidClass(paramClass)) {
@@ -255,7 +254,7 @@ public class InjectResourceProcessor implements IClassTransformer {
   }
 
   //extension point for new classes
-  private String getApplicationString(CtClass targetClazz) {
+  private String getApplicationString(CtClass targetClazz) throws NotFoundException {
     if (isApplication(targetClazz)) {
       return GET_ROOT_TAG;
     } else if (isActivity(targetClazz) || isService(targetClazz)) {
@@ -305,10 +304,13 @@ public class InjectResourceProcessor implements IClassTransformer {
       }
 
       String fieldName = field.getName();
-      String capitalizedName = fieldName.substring(0,1).toUpperCase() + (fieldName.length() > 1 ? fieldName.substring(1) : "");
-      String idName = "id"+ capitalizedName;
+      String capitalizedName =
+          fieldName.substring(0, 1).toUpperCase() + (fieldName.length() > 1 ? fieldName.substring(1)
+              : "");
+      String idName = "id" + capitalizedName;
       String initIdString = "int " + idName + " = ";
-      String realId = id>=0 ? String.valueOf(id) : "resources.getIdentifier(\"" + name + "\",null,application.getPackageName())";
+      String realId = id >= 0 ? String.valueOf(id)
+          : "resources.getIdentifier(\"" + name + "\",null,application.getPackageName())";
       initIdString += realId + ";\n";
       buffer.append(initIdString);
 
@@ -371,7 +373,7 @@ public class InjectResourceProcessor implements IClassTransformer {
   }
 
   //extension point for new classes
-  private boolean isValidClass(CtClass clazz) {
+  private boolean isValidClass(CtClass clazz) throws NotFoundException {
     return isView(clazz)
         || isActivity(clazz)
         || isService(clazz)
@@ -382,60 +384,32 @@ public class InjectResourceProcessor implements IClassTransformer {
         || isSupportFragment(clazz);
   }
 
-  private boolean isActivity(CtClass clazz) {
-    try {
-      return isSubClass(clazz.getClassPool(), clazz, Activity.class);
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+  private boolean isActivity(CtClass clazz) throws NotFoundException {
+    return isSubClass(clazz.getClassPool(), clazz, Activity.class);
   }
 
-  private boolean isService(CtClass clazz) {
-    try {
-      return isSubClass(clazz.getClassPool(), clazz, Service.class);
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+  private boolean isService(CtClass clazz) throws NotFoundException {
+    return isSubClass(clazz.getClassPool(), clazz, Service.class);
   }
 
-  private boolean isContext(CtClass clazz) {
-    try {
-      return isSubClass(clazz.getClassPool(), clazz, Context.class);
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+  private boolean isContext(CtClass clazz) throws NotFoundException {
+    return isSubClass(clazz.getClassPool(), clazz, Context.class);
   }
 
-  private boolean isBroadCastReceiver(CtClass clazz) {
-    try {
-      return isSubClass(clazz.getClassPool(), clazz, BroadcastReceiver.class);
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+  private boolean isBroadCastReceiver(CtClass clazz) throws NotFoundException {
+    return isSubClass(clazz.getClassPool(), clazz, BroadcastReceiver.class);
   }
 
-  private boolean isContentProvider(CtClass clazz) {
-    try {
-      return isSubClass(clazz.getClassPool(), clazz, ContentProvider.class);
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+  private boolean isContentProvider(CtClass clazz) throws NotFoundException {
+    return isSubClass(clazz.getClassPool(), clazz, ContentProvider.class);
   }
 
-  private boolean isApplication(CtClass clazz) {
-    try {
-      return isSubClass(clazz.getClassPool(), clazz, Application.class);
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+  private boolean isApplication(CtClass clazz) throws NotFoundException {
+    return isSubClass(clazz.getClassPool(), clazz, Application.class);
   }
 
-  private boolean isFragment(CtClass clazz) {
-    try {
-      return isSubClass(clazz.getClassPool(), clazz, Fragment.class);
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+  private boolean isFragment(CtClass clazz) throws NotFoundException {
+    return isSubClass(clazz.getClassPool(), clazz, Fragment.class);
   }
 
   private boolean isSupportFragment(CtClass clazz) {
@@ -448,12 +422,8 @@ public class InjectResourceProcessor implements IClassTransformer {
     }
   }
 
-  private boolean isView(CtClass clazz) {
-    try {
-      return isSubClass(clazz.getClassPool(), clazz, View.class);
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+  private boolean isView(CtClass clazz) throws NotFoundException {
+    return isSubClass(clazz.getClassPool(), clazz, View.class);
   }
 
   private boolean isSubClass(ClassPool classPool, CtClass clazz, Class<?> superClass)
