@@ -15,7 +15,8 @@ buildscript {
   dependencies {
     classpath 'com.android.tools.build:gradle:0.12.2'
     classpath 'com.github.stephanenicolas.morpheus:morpheus-plugin:1.0.0'
-    classpath("com.github.stephanenicolas.injectresource:injectresource-plugin:1.0.0-SNAPSHOT")
+    //replace by specific version. We use + for CI
+    classpath("com.github.stephanenicolas.injectresource:injectresource-plugin:1.+")
     //if support is needed add this
     //also see repositories section
     //classpath 'com.android.support:support-v4:19.1.0'
