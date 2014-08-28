@@ -15,6 +15,8 @@ import android.view.animation.Animation;
 import com.github.stephanenicolas.afterburner.AfterBurner;
 import com.github.stephanenicolas.afterburner.exception.AfterBurnerImpossibleException;
 import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.*;
+
+import com.github.stephanenicolas.morpheus.commons.CtClassFilter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -91,6 +93,7 @@ public class InjectResourceProcessor implements IClassTransformer {
   private static final String GET_ROOT_TAG = "GET_ROOT";
 
   private AfterBurner afterBurner = new AfterBurner();
+  private SupportedCtClassFiter supportedCtClassFiter = new SupportedCtClassFiter();
 
   @Override
   public boolean shouldTransform(CtClass candidateClass) throws JavassistBuildException {
@@ -102,10 +105,10 @@ public class InjectResourceProcessor implements IClassTransformer {
         return false;
       }
 
-      boolean isAcceptedClass = isValidClass(candidateClass);
+      boolean isAcceptedClass = supportedCtClassFiter.isValid(candidateClass);
 
       if (!isAcceptedClass) {
-        List<CtConstructor> ctConstructors = extractValidConstructors(candidateClass);
+        List<CtConstructor> ctConstructors = extractValidConstructors(candidateClass, supportedCtClassFiter);
         isAcceptedClass = !ctConstructors.isEmpty();
       }
 
@@ -167,7 +170,7 @@ public class InjectResourceProcessor implements IClassTransformer {
       CtMethod onReceiveMethod = afterBurner.extractExistingMethod(targetClazz, "onReceive");
       onReceiveMethod.insertBefore(body);
     } else {
-      List<CtConstructor> ctConstructors = extractValidConstructors(targetClazz);
+      List<CtConstructor> ctConstructors = extractValidConstructors(targetClazz, supportedCtClassFiter);
       if (ctConstructors.isEmpty()) {
         throw new InjectResourceException(format(
             "Injecting resource in %s is not supported. Injection is supported in Activities, "
@@ -177,7 +180,7 @@ public class InjectResourceProcessor implements IClassTransformer {
       }
       for (CtConstructor ctConstructor : ctConstructors) {
         CtClass[] parameterTypes = ctConstructor.getParameterTypes();
-        int indexParam = findValidParamIndex(parameterTypes);
+        int indexParam = findValidParamIndex(parameterTypes, supportedCtClassFiter);
         log.debug(
             format("Valid param in constructor with type %s: %d", ctConstructor.getSignature(),
                 indexParam));
@@ -203,34 +206,6 @@ public class InjectResourceProcessor implements IClassTransformer {
     bodyCopy =
         bodyCopy.replaceAll(GET_APPLICATION_TAG, Matcher.quoteReplacement(getApplicationString));
     return bodyCopy;
-  }
-
-  private List<CtConstructor> extractValidConstructors(final CtClass classToTransform)
-      throws NotFoundException {
-    List<CtConstructor> constructors = new ArrayList<CtConstructor>();
-    CtConstructor[] declaredConstructors = classToTransform.getDeclaredConstructors();
-    for (CtConstructor constructor : declaredConstructors) {
-      CtClass[] paramClasses = constructor.getParameterTypes();
-      if (paramClasses.length >= 1) {
-        int indexValidParam = findValidParamIndex(paramClasses);
-        if (indexValidParam >= 0) {
-          constructors.add(constructor);
-        }
-      }
-    }
-    return constructors;
-  }
-
-  private int findValidParamIndex(CtClass[] parameterTypes) throws NotFoundException {
-    int indexParam = 0;
-    for (CtClass paramClass : parameterTypes) {
-      if (isValidClass(paramClass)) {
-        return indexParam;
-      } else {
-        indexParam++;
-      }
-    }
-    return -1;
   }
 
   //extension point for new classes
@@ -342,15 +317,18 @@ public class InjectResourceProcessor implements IClassTransformer {
   }
 
   //extension point for new classes
-  private boolean isValidClass(CtClass clazz) throws NotFoundException {
-    return isView(clazz)
-        || isActivity(clazz)
-        || isService(clazz)
-        || isBroadCastReceiver(clazz)
-        || isContentProvider(clazz)
-        || isApplication(clazz)
-        || isFragment(clazz)
-        || isSupportFragment(clazz);
+  private static class SupportedCtClassFiter implements CtClassFilter {
+    @Override
+    public boolean isValid(CtClass clazz) throws NotFoundException {
+      return isView(clazz)
+          || isActivity(clazz)
+          || isService(clazz)
+          || isBroadCastReceiver(clazz)
+          || isContentProvider(clazz)
+          || isApplication(clazz)
+          || isFragment(clazz)
+          || isSupportFragment(clazz);
+    }
   }
 
 }
