@@ -205,22 +205,6 @@ public class InjectResourceProcessor implements IClassTransformer {
     return bodyCopy;
   }
 
-  private List<CtField> getAllInjectedFieldsForAnnotation(CtClass clazz,
-      Class<? extends Annotation> annotationClazz) {
-    List<CtField> result = new ArrayList<CtField>();
-    CtField[] allFields = clazz.getDeclaredFields();
-    log.debug("Scanning fields in " + clazz.getName());
-    for (CtField field : allFields) {
-      log.debug("Discovered field " + field.getName());
-      if (field.hasAnnotation(annotationClazz)) {
-        log.debug(
-            "Field " + field.getName() + " has annotation " + annotationClazz.getSimpleName());
-        result.add(field);
-      }
-    }
-    return result;
-  }
-
   private List<CtConstructor> extractValidConstructors(final CtClass classToTransform)
       throws NotFoundException {
     List<CtConstructor> constructors = new ArrayList<CtConstructor>();
@@ -369,13 +353,4 @@ public class InjectResourceProcessor implements IClassTransformer {
         || isSupportFragment(clazz);
   }
 
-  private boolean isSupportFragment(CtClass clazz) {
-    try {
-      Class<?> supportFragmentClass = Class.forName("android.support.v4.app.Fragment");
-      return isSubClass(clazz.getClassPool(), clazz, supportFragmentClass);
-    } catch (Exception e) {
-      //can happen
-      return false;
-    }
-  }
 }
