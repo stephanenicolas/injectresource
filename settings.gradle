@@ -1,3 +1,5 @@
 include ':injectresource-annotations'
 include ':injectresource-plugin'
-include ':injectresource-example'
+//can be added manually if needed but can't be part of the build
+//as its **buildScript** uses artifacts of previous projects.
+//include ':injectresource-example'

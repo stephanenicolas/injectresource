@@ -28,6 +28,7 @@ public class InjectResourceProcessorInActivityTest {
   public static final int RESOURCE_ID_ANIMATION = android.R.anim.fade_in;
   public static final int RESOURCE_ID_COLOR_STATE_LIST = R.color.colorlist;
   public static final int RESOURCE_ID_DRAWABLE = R.drawable.ic_launcher;
+  public static final int RESOURCE_BAD_ID = 1111111;
 
   @Test
   public void shouldInjectResource_simple() {
@@ -55,8 +56,20 @@ public class InjectResourceProcessorInActivityTest {
 
   @Test(expected = RuntimeException.class)
   public void shouldInjectResource_badResourceType() {
-    TestActivityWithBadResource activity =
-        Robolectric.buildActivity(TestActivityWithBadResource.class).create().get();
+    TestActivityWithBadResourceType activity =
+        Robolectric.buildActivity(TestActivityWithBadResourceType.class).create().get();
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void shouldInjectResource_badResourceTypeArray() {
+    TestActivityWithBadResourceTypeArray activity =
+        Robolectric.buildActivity(TestActivityWithBadResourceTypeArray.class).create().get();
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void shouldInjectResource_badResourceId() {
+    TestActivityWithBadResourceID activity =
+        Robolectric.buildActivity(TestActivityWithBadResourceID.class).create().get();
   }
 
   public static class TestActivity extends Activity {
@@ -88,9 +101,19 @@ public class InjectResourceProcessorInActivityTest {
     protected String s;
   }
 
-  public static class TestActivityWithBadResource extends Activity {
+  public static class TestActivityWithBadResourceType extends Activity {
     @InjectResource(RESOURCE_ID_STRING)
     protected Foo badResource;
+  }
+
+  public static class TestActivityWithBadResourceTypeArray extends Activity {
+    @InjectResource(RESOURCE_ID_STRING)
+    protected boolean[] badResource;
+  }
+
+  public static class TestActivityWithBadResourceID extends Activity {
+    @InjectResource(RESOURCE_BAD_ID)
+    protected String badResource;
   }
 
   private static class Foo {
