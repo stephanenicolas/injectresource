@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.animation.Animation;
 import com.github.stephanenicolas.afterburner.AfterBurner;
 import com.github.stephanenicolas.afterburner.exception.AfterBurnerImpossibleException;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -356,17 +357,6 @@ public class InjectResourceProcessor implements IClassTransformer {
     return buffer.toString();
   }
 
-  private boolean isStringArray(CtField field, ClassPool classPool) throws NotFoundException {
-    return field.getType().isArray() && isSubClass(classPool, field.getType().getComponentType(),
-        String.class);
-  }
-
-  private boolean isIntArray(CtField field) throws NotFoundException {
-    return field.getType().isArray() && field.getType()
-        .getComponentType()
-        .subtypeOf(CtClass.intType);
-  }
-
   //extension point for new classes
   private boolean isValidClass(CtClass clazz) throws NotFoundException {
     return isView(clazz)
@@ -379,34 +369,6 @@ public class InjectResourceProcessor implements IClassTransformer {
         || isSupportFragment(clazz);
   }
 
-  private boolean isActivity(CtClass clazz) throws NotFoundException {
-    return isSubClass(clazz.getClassPool(), clazz, Activity.class);
-  }
-
-  private boolean isService(CtClass clazz) throws NotFoundException {
-    return isSubClass(clazz.getClassPool(), clazz, Service.class);
-  }
-
-  private boolean isContext(CtClass clazz) throws NotFoundException {
-    return isSubClass(clazz.getClassPool(), clazz, Context.class);
-  }
-
-  private boolean isBroadCastReceiver(CtClass clazz) throws NotFoundException {
-    return isSubClass(clazz.getClassPool(), clazz, BroadcastReceiver.class);
-  }
-
-  private boolean isContentProvider(CtClass clazz) throws NotFoundException {
-    return isSubClass(clazz.getClassPool(), clazz, ContentProvider.class);
-  }
-
-  private boolean isApplication(CtClass clazz) throws NotFoundException {
-    return isSubClass(clazz.getClassPool(), clazz, Application.class);
-  }
-
-  private boolean isFragment(CtClass clazz) throws NotFoundException {
-    return isSubClass(clazz.getClassPool(), clazz, Fragment.class);
-  }
-
   private boolean isSupportFragment(CtClass clazz) {
     try {
       Class<?> supportFragmentClass = Class.forName("android.support.v4.app.Fragment");
@@ -415,15 +377,5 @@ public class InjectResourceProcessor implements IClassTransformer {
       //can happen
       return false;
     }
-  }
-
-  private boolean isView(CtClass clazz) throws NotFoundException {
-    return isSubClass(clazz.getClassPool(), clazz, View.class);
-  }
-
-  private boolean isSubClass(ClassPool classPool, CtClass clazz, Class<?> superClass)
-      throws NotFoundException {
-    CtClass superclass = classPool.get(superClass.getName());
-    return clazz.subclassOf(superclass);
   }
 }
