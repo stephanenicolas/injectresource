@@ -17,10 +17,12 @@ before_install:
 install:
     # Without TERM=dumb, we get mangled output in the Travis console
     # Avoid evaluating example project. Thx to Daryl Teo
-    - TERM=dumb ./gradlew clean install --configure-on-demand
+    - TERM=dumb ./gradlew clean install
 
 script:
-    - TERM=dumb ./gradlew check -x :injectresource-example:check
+    - TERM=dumb ./gradlew check
+    - cd inject-resource-example
+    - ../gradlew check
 
 env:
   global:
