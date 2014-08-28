@@ -3,6 +3,7 @@ package com.github.stephanenicolas.injectresource;
 import android.app.Activity;
 import android.content.res.ColorStateList;
 import android.graphics.Movie;
+import android.graphics.drawable.Drawable;
 import android.view.animation.Animation;
 import com.test.injectresource.R;
 import org.junit.Test;
@@ -25,7 +26,8 @@ public class InjectResourceProcessorInActivityTest {
   public static final int RESOURCE_ID_INTEGER_ARRAY = R.array.intarray1;
   public static final int RESOURCE_ID_MOVIE = R.raw.small;
   public static final int RESOURCE_ID_ANIMATION = android.R.anim.fade_in;
-  public static final int RESOURCE_COLOR_STATE_LIST = R.color.colorlist;
+  public static final int RESOURCE_ID_COLOR_STATE_LIST = R.color.colorlist;
+  public static final int RESOURCE_ID_DRAWABLE = R.drawable.ic_launcher;
 
   @Test
   public void shouldInjectResource_simple() {
@@ -48,6 +50,7 @@ public class InjectResourceProcessorInActivityTest {
     //doesn't work on Robolectric..
     //assertNotNull(activity.movie);
     assertNotNull(activity.colorStateList);
+    assertNotNull(activity.drawable);
   }
 
   public static class TestActivity extends Activity {
@@ -69,7 +72,9 @@ public class InjectResourceProcessorInActivityTest {
     protected Movie movie;
     @InjectResource(RESOURCE_ID_ANIMATION)
     protected Animation anim;
-    @InjectResource(RESOURCE_COLOR_STATE_LIST)
+    @InjectResource(RESOURCE_ID_COLOR_STATE_LIST)
     protected ColorStateList colorStateList;
+    @InjectResource(RESOURCE_ID_DRAWABLE)
+    protected Drawable drawable;
   }
 }
