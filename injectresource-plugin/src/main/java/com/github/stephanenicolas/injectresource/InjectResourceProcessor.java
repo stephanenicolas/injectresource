@@ -17,7 +17,6 @@ import com.github.stephanenicolas.afterburner.exception.AfterBurnerImpossibleExc
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import javassist.CannotCompileException;
@@ -221,24 +220,20 @@ public class InjectResourceProcessor implements IClassTransformer {
     return result;
   }
 
-  private List<CtConstructor> extractValidConstructors(final CtClass classToTransform) {
-    try {
-      List<CtConstructor> constructors = new ArrayList<CtConstructor>();
-      CtConstructor[] declaredConstructors = classToTransform.getDeclaredConstructors();
-      for (CtConstructor constructor : declaredConstructors) {
-        CtClass[] paramClasses = constructor.getParameterTypes();
-        if (paramClasses.length >= 1) {
-          int indexValidParam = findValidParamIndex(paramClasses);
-          if (indexValidParam >= 0) {
-            constructors.add(constructor);
-          }
+  private List<CtConstructor> extractValidConstructors(final CtClass classToTransform)
+      throws NotFoundException {
+    List<CtConstructor> constructors = new ArrayList<CtConstructor>();
+    CtConstructor[] declaredConstructors = classToTransform.getDeclaredConstructors();
+    for (CtConstructor constructor : declaredConstructors) {
+      CtClass[] paramClasses = constructor.getParameterTypes();
+      if (paramClasses.length >= 1) {
+        int indexValidParam = findValidParamIndex(paramClasses);
+        if (indexValidParam >= 0) {
+          constructors.add(constructor);
         }
       }
-      return constructors;
-    } catch (Exception e) {
-      log.debug("Problem in extraction of constructors", e);
-      return Collections.EMPTY_LIST;
     }
+    return constructors;
   }
 
   private int findValidParamIndex(CtClass[] parameterTypes) throws NotFoundException {

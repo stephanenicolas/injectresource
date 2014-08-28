@@ -53,6 +53,12 @@ public class InjectResourceProcessorInActivityTest {
     assertNotNull(activity.drawable);
   }
 
+  @Test(expected = RuntimeException.class)
+  public void shouldInjectResource_badResourceType() {
+    TestActivityWithBadResource activity =
+        Robolectric.buildActivity(TestActivityWithBadResource.class).create().get();
+  }
+
   public static class TestActivity extends Activity {
     @InjectResource(RESOURCE_ID_STRING)
     protected String string;
@@ -76,5 +82,17 @@ public class InjectResourceProcessorInActivityTest {
     protected ColorStateList colorStateList;
     @InjectResource(RESOURCE_ID_DRAWABLE)
     protected Drawable drawable;
+
+    //short name case.
+    @InjectResource(RESOURCE_ID_STRING)
+    protected String s;
+  }
+
+  public static class TestActivityWithBadResource extends Activity {
+    @InjectResource(RESOURCE_ID_STRING)
+    protected Foo badResource;
+  }
+
+  private static class Foo {
   }
 }
