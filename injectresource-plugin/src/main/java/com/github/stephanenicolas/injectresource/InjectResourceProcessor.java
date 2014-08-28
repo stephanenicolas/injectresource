@@ -14,12 +14,8 @@ import android.view.View;
 import android.view.animation.Animation;
 import com.github.stephanenicolas.afterburner.AfterBurner;
 import com.github.stephanenicolas.afterburner.exception.AfterBurnerImpossibleException;
-import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.*;
-
 import com.github.stephanenicolas.morpheus.commons.CtClassFilter;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import javassist.CannotCompileException;
@@ -33,6 +29,21 @@ import javassist.build.IClassTransformer;
 import javassist.build.JavassistBuildException;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.extractValidConstructors;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.findValidParamIndex;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.getAllInjectedFieldsForAnnotation;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.isActivity;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.isApplication;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.isBroadCastReceiver;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.isContentProvider;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.isContext;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.isFragment;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.isIntArray;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.isService;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.isStringArray;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.isSubClass;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.isSupportFragment;
+import static com.github.stephanenicolas.morpheus.commons.JavassistUtils.isView;
 import static java.lang.String.format;
 
 /**
@@ -108,7 +119,8 @@ public class InjectResourceProcessor implements IClassTransformer {
       boolean isAcceptedClass = supportedCtClassFiter.isValid(candidateClass);
 
       if (!isAcceptedClass) {
-        List<CtConstructor> ctConstructors = extractValidConstructors(candidateClass, supportedCtClassFiter);
+        List<CtConstructor> ctConstructors =
+            extractValidConstructors(candidateClass, supportedCtClassFiter);
         isAcceptedClass = !ctConstructors.isEmpty();
       }
 
@@ -170,7 +182,8 @@ public class InjectResourceProcessor implements IClassTransformer {
       CtMethod onReceiveMethod = afterBurner.extractExistingMethod(targetClazz, "onReceive");
       onReceiveMethod.insertBefore(body);
     } else {
-      List<CtConstructor> ctConstructors = extractValidConstructors(targetClazz, supportedCtClassFiter);
+      List<CtConstructor> ctConstructors =
+          extractValidConstructors(targetClazz, supportedCtClassFiter);
       if (ctConstructors.isEmpty()) {
         throw new InjectResourceException(format(
             "Injecting resource in %s is not supported. Injection is supported in Activities, "
@@ -330,5 +343,4 @@ public class InjectResourceProcessor implements IClassTransformer {
           || isSupportFragment(clazz);
     }
   }
-
 }
