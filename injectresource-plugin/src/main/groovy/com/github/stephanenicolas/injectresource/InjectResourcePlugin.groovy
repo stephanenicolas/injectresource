@@ -17,7 +17,7 @@ public class InjectResourcePlugin extends AbstractMorpheusPlugin {
   @Override
   protected void configure(Project project) {
     project.dependencies {
-      provided 'com.github.stephanenicolas.injectresource:injectresource-annotations:1.0.0-SNAPSHOT'
+      provided 'com.github.stephanenicolas.injectresource:injectresource-annotations:1.0.+'
     }
   }
 
